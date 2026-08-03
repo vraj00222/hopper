@@ -168,6 +168,39 @@ wss.on('connection', async (ws: WebSocket) => {
   ws.on('close', off);
 });
 
+/**
+ * A stale server holding the port is the single most common way this fails to
+ * start, and a raw EADDRINUSE stack trace buries the one thing you need to
+ * know. Say what is wrong and exactly how to clear it.
+ */
+const onListenError = async (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(
+      [
+        '',
+        `api        port ${API_PORT} is already in use — another Hopper server is running.`,
+        '',
+        '  clear it:  lsof -ti:8787 | xargs kill -9',
+        `  or check:  curl -s http://localhost:${API_PORT}/api/health`,
+        '',
+        '           If that health check answers, a server is already up and',
+        '           the console on :5173 will connect to it — you may not need',
+        '           to start another one at all.',
+        '',
+      ].join('\n'),
+    );
+  } else {
+    console.error(`api        failed to listen: ${err.message}`);
+  }
+  await hopper.shutdown().catch(() => {});
+  process.exit(1);
+};
+
+// WebSocketServer attaches to the http server and re-emits listen failures on
+// itself, so both need the handler or the process dies on an unhandled 'error'.
+server.on('error', onListenError);
+wss.on('error', onListenError);
+
 server.listen(API_PORT, () => {
   console.log(`api        http://localhost:${API_PORT}  ws://localhost:${API_PORT}/ws`);
   console.log(`falkordb   http://localhost:3000`);
