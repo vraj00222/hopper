@@ -226,8 +226,11 @@ const precedent: OpHandler = async (_params, state, ctx) => {
   const freshest = rows[0];
   return {
     summary: rows.length
-      ? `${rows.length} prior attempt(s) on ${pkg}${
-          freshest ? ` · latest ${freshest.from_v}→${freshest.to_v} ${freshest.outcome} ${Math.round(freshest.age_seconds)}s ago` : ''
+      ? `${rows.length} prior attempt(s) relevant to ${pkg}${
+          freshest
+            ? ` · latest ${freshest.package} ${freshest.from_v}→${freshest.to_v} ` +
+              `${freshest.outcome} ${Math.round(freshest.age_seconds)}s ago`
+            : ''
         }`
       : `no prior patch attempt on ${pkg}`,
     tokens: 0,

@@ -230,6 +230,11 @@ async function runPass(label: string, graph: GraphPort): Promise<void> {
   console.log(`        ${wide.reason}`);
   ok(/widened/.test(wide.reason), 'reason names the widening');
   ok(wide.spec.nodes.length > 0 && validateSpec(wide.spec).ok, 'widened fallback returns a runnable spec');
+  ok(
+    wide.selection.pipeline_id !== 'pipe_fast_suppress',
+    'widening never crosses the zero-path boundary onto a suppressor',
+    `picked=${wide.selection.pipeline_id}`,
+  );
 
   const alien: AdvisoryClass = {
     id: 'cargo/low/none',
@@ -241,6 +246,7 @@ async function runPass(label: string, graph: GraphPort): Promise<void> {
   console.log(`        ${global.reason}`);
   ok(global.spec.nodes.length > 0 && validateSpec(global.spec).ok, 'unknown ecosystem still returns a runnable spec');
   ok(/widened|global best/.test(global.reason), 'reason explains the last-resort match');
+  eq(global.selection.pipeline_id, 'pipe_fast_suppress', 'a zero-path class still lands on a suppressor');
 
   console.log(`\n  ${label} pass complete`);
 }

@@ -19,7 +19,9 @@ import {
 } from '@hopper/contracts';
 import type {
   Advisory,
+  AgentBusEvent,
   ClockTick,
+  DecisionEvent,
   EventEnvelope,
   HopperEvent,
   Topic,
@@ -27,7 +29,7 @@ import type {
 
 import { createBus, createIngest } from '../index.js';
 import { fetchKev, kevIndex } from '../sources/kev.js';
-import { validateEnvelope } from '../validate.js';
+import { validateEnvelope, validateEvent } from '../validate.js';
 import { REPLAY_FIXTURE, fmtAge, repoRoot } from '../paths.js';
 
 const RULE = '─'.repeat(72);
@@ -35,7 +37,7 @@ let passed = 0;
 let failed = 0;
 const failures: string[] = [];
 
-function head(n: number, title: string): void {
+function head(n: number | string, title: string): void {
   console.log('');
   console.log(`[${n}] ${title}`);
 }
@@ -114,7 +116,11 @@ async function main(): Promise<void> {
   );
   const fixtureOnly = advisories.length > 0 && advisories.every((a) => a.source === 'fixture');
   if (fixtureOnly) {
-    line('NOTE  github and osv were both unreachable — served from fixtures/live.json');
+    line(
+      forcedMock
+        ? 'NOTE  MOCK=true — no network was attempted, served from fixtures/live.json'
+        : 'NOTE  github and osv were both unreachable — served from fixtures/live.json',
+    );
   }
   check(
     'pullLive >= 5 advisories',
@@ -153,7 +159,9 @@ async function main(): Promise<void> {
   // ── 3 · the 1Hz obligation clock ──────────────────────────────────────────
   head(3, `1Hz obligation clock · ${HERO_CUSTOMER} ${HERO_CLAUSE} ${HERO_WINDOW_HOURS}h`);
   const ticks: ClockTick[] = [];
-  const unsubClock = bus.subscribe<ClockTick>('clock', (e) => ticks.push(e.payload));
+  const unsubClock = bus.subscribe<ClockTick>('clock', (e) => {
+    ticks.push(e.payload);
+  });
   const first = await ingest.startClock({
     ghsa_id: HERO_GHSA,
     customer: HERO_CUSTOMER,
@@ -315,30 +323,108 @@ async function main(): Promise<void> {
     `${replayed}/${expected.length} events, order and payload refs identical to the fixture`,
   );
 
+  // ── 6b · agent-bus + decisions ────────────────────────────────────────────
+  // L5 is written by @hopper/agents and `decisions` by the orchestrator. We
+  // guarantee two things for them: strict ordering, and a funnel derived from
+  // what they publish (the contract is frozen, so there are no setters).
+  head('6b', 'agent-bus ordering + funnel derived from the decisions topic');
+  const heard5: string[] = [];
+  const unsub5 = bus.subscribe<AgentBusEvent>('agent-bus', (e) => {
+    heard5.push(`${e.seq}:${e.payload.phase}`);
+  });
+  const script: Array<[AgentBusEvent['agent'], AgentBusEvent['phase'], string, unknown]> = [
+    ['reachability', 'started', 'walking call graph', undefined],
+    ['reachability', 'verdict', 'expand() observed in build-api', { reachable: true }],
+    ['patch-engineer', 'verdict', 'safe bump to 1.1.18', { safe_bump: true }],
+    ['obligation-officer', 'verdict', `${HERO_CLAUSE} — 24h notice owed`, { obligated: true }],
+    ['arbiter', 'resolved', 'escalate: reachable and contractually obligated', { decision: 'auto' }],
+  ];
+  for (const [agent, phase, message, payload] of script) {
+    await bus.publish<AgentBusEvent>('agent-bus', {
+      kind: 'agent-bus',
+      agent,
+      ghsa_id: HERO_GHSA,
+      phase,
+      message,
+      confidence: 0.9,
+      payload,
+      session_id: 'gate-session',
+    });
+  }
+  // beat 2 — the arbiter suppresses, and the funnel has to notice
+  await bus.publish<AgentBusEvent>('agent-bus', {
+    kind: 'agent-bus',
+    agent: 'arbiter',
+    ghsa_id: 'GHSA-0000-supp-0001',
+    phase: 'resolved',
+    message: 'SUPPRESSED · zero hops from any repo',
+    confidence: 0.98,
+    payload: { decision: 'suppress' },
+  });
+  await bus.publish<DecisionEvent>('decisions', {
+    kind: 'decision',
+    ghsa_id: HERO_GHSA,
+    action: 'open_pr',
+    auto: true,
+    requires_approval: false,
+    status: 'executed',
+    ts: nowIso(),
+  });
+  await bus.publish<DecisionEvent>('decisions', {
+    kind: 'decision',
+    ghsa_id: HERO_GHSA,
+    action: 'notify_customer',
+    auto: false,
+    requires_approval: true,
+    approval_id: 'apr_gate_1',
+    status: 'pending_approval',
+    ts: nowIso(),
+  });
+  unsub5();
+  const transcript = bus.history<AgentBusEvent>('agent-bus');
+  const ordered =
+    transcript.every((e, i, a) => i === 0 || a[i - 1].seq < e.seq) &&
+    heard5.length === transcript.length;
+  const funnel = bus.stats();
+  line(`transcript   ${transcript.length} events, seq strictly increasing=${ordered}`);
+  line(
+    `derived      traversed=${funnel.traversed} suppressed=${funnel.suppressed} escalated=${funnel.escalated} actions=${funnel.actions}`,
+  );
+  check(
+    'agent-bus preserves order and is replayable from history()',
+    ordered && transcript.length === 6,
+    `${transcript.length} transcript events, delivered in publish order, readable back out of history()`,
+  );
+  check(
+    'funnel derived from decisions + arbiter verdicts',
+    funnel.traversed === 2 && funnel.escalated === 1 && funnel.suppressed === 1 && funnel.actions === 1,
+    `traversed=${funnel.traversed} escalated=${funnel.escalated} suppressed=${funnel.suppressed} actions=${funnel.actions} — no setters, all derived off the bus`,
+  );
+
   // ── 7 · contract validation ───────────────────────────────────────────────
   head(7, 'runtime validation of every published event');
-  const allSeen = [...seen, ...replayBus.history<HopperEvent>('advisories')];
   const problems: string[] = [];
   const kinds = new Map<string, number>();
-  for (const e of seen) {
+  let total = 0;
+  const inspect = (e: EventEnvelope<HopperEvent>): void => {
+    total += 1;
     kinds.set(e.payload.kind, (kinds.get(e.payload.kind) ?? 0) + 1);
     const v = validateEnvelope(e);
     if (!v.ok) problems.push(`${e.topic}/${e.id}: ${v.errors.join('; ')}`);
-  }
-  for (const t of TOPICS) {
-    for (const e of replayBus.history<HopperEvent>(t)) {
-      kinds.set(e.payload.kind, (kinds.get(e.payload.kind) ?? 0) + 1);
-      const v = validateEnvelope(e);
-      if (!v.ok) problems.push(`${e.topic}/${e.id}: ${v.errors.join('; ')}`);
-    }
-  }
+  };
+  for (const e of seen) inspect(e);
+  for (const t of TOPICS) for (const e of replayBus.history<HopperEvent>(t)) inspect(e);
+  for (const t of TOPICS) for (const e of burstBus.history<HopperEvent>(t)) inspect(e);
   line(`observed     ${[...kinds].map(([k, n]) => `${k}=${n}`).join('  ')}`);
-  line(`invalid      ${bus.stats().ingested >= 0 ? problems.length : problems.length}`);
+  line(`invalid      ${problems.length}`);
   for (const p of problems.slice(0, 5)) line(`             ${p}`);
+  // a deliberately malformed payload must be caught, or the validator is a no-op
+  const negative = validateEvent({ kind: 'advisory', advisory: { ghsa_id: 'nope', severity: 'SPICY' }, received_at: 'yesterday' });
+  line(`negative     malformed advisory -> ${negative.errors.length} errors detected`);
   check(
     'every event validates against its contract type',
-    problems.length === 0 && kinds.size >= 4,
-    `${allSeen.length} envelopes across ${kinds.size} event kinds, 0 invalid`,
+    problems.length === 0 && kinds.size >= 5 && negative.ok === false && negative.errors.length >= 4,
+    `${total} envelopes across ${kinds.size} event kinds, 0 invalid, and a malformed payload is rejected with ${negative.errors.length} errors`,
   );
 
   // reachability sanity — not a numbered gate item but the demo depends on it
@@ -377,7 +463,7 @@ async function main(): Promise<void> {
 
   console.log(RULE);
   if (failed === 0) {
-    console.log(`GATE PASS   ${passed}/${passed} checks   ingest is done`);
+    console.log(`GATE PASS   ${passed}/${passed + failed} checks   ingest is done`);
   } else {
     console.log(`GATE FAIL   ${passed} passed, ${failed} failed`);
     for (const f2 of failures) console.log(`            ${f2}`);

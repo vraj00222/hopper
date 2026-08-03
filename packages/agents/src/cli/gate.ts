@@ -22,6 +22,7 @@ import {
   autoInput,
   beat1Input,
   beat3Input,
+  leakProbeInput,
   suppressedInput,
   SENTINEL_GITHUB_TOKEN,
 } from '../testing/fixtures.js';
@@ -135,8 +136,13 @@ async function main(): Promise<void> {
     'patch rationale states plainly that the bump was 90 seconds ago and staging broke',
   );
   assert(
-    beat1.arbiter.conflict === false,
-    'no conflict when the precedent is old and successful (beat 1) — not a hardcoded advisory branch',
+    beat1.arbiter.conflict === false && beat1.patch.safe_bump === true,
+    'beat 1 carries an identical broke_staging precedent three days old and produces no conflict — ' +
+      'recency drives the escalation, not a hardcoded advisory id',
+  );
+  assert(
+    beat1.patch.breaking_risk === 'medium' && beat1.patch.precedent_ids.length === 1,
+    'the stale failure still prices the risk (medium) and is still cited',
   );
   block('conflict sentence', hero.arbiter.rationale);
 
@@ -217,6 +223,25 @@ async function main(): Promise<void> {
 
   // ── 6. credential containment ────────────────────────────────────────────
   section(6, 'G7 credentials — values never enter agent context, transcript or verdict');
+
+  // positive control: plant the sentinel inside graph data the agent is certain to
+  // quote, so the assertions below are proof of containment rather than of absence
+  const probeGraph = new StubGraph();
+  const probeBus = new StubBus();
+  const probeAgents = createAgents({
+    mock: true,
+    graph: probeGraph,
+    bus: probeBus,
+    credentials: { GITHUB_TOKEN: SENTINEL_GITHUB_TOKEN },
+  });
+  const probe = await probeAgents.run(leakProbeInput());
+  const probeJson = JSON.stringify([probe, probeGraph.verdicts, probeBus.published, probeAgents.pendingApprovals()]);
+  assert(
+    probeJson.includes('[redacted:GITHUB_TOKEN]'),
+    'a credential value planted in a PatchAttempt note is quoted by the agent and replaced with a named placeholder',
+  );
+  assert(!probeJson.includes(SENTINEL_GITHUB_TOKEN), 'and the value itself survives nowhere in that run');
+
   const serialised = JSON.stringify([beat1, hero, supp, auto]);
   assert(!serialised.includes(SENTINEL_GITHUB_TOKEN), 'sentinel absent from every AgentRunResult serialisation');
   const allTranscripts = JSON.stringify([
@@ -236,8 +261,8 @@ async function main(): Promise<void> {
   assert((await agents.credential('GITHUB_TOKEN')) === SENTINEL_GITHUB_TOKEN, 'credential("GITHUB_TOKEN") still resolves the real value');
   assert((await agents.credential('NOPE')) === null, 'unknown credential resolves to null');
   assert(
-    beat1.patch.rationale.includes('GITHUB_TOKEN') || bus.published.some((e) => e.message.includes('GITHUB_TOKEN')),
-    'the run genuinely touched GITHUB_TOKEN by name (presence, never value)',
+    bus.published.some((e) => e.message.includes('GITHUB_TOKEN')),
+    'the run names GITHUB_TOKEN in the trace as available to the executor — presence, never value',
   );
 
   // ── 7. session trace ─────────────────────────────────────────────────────

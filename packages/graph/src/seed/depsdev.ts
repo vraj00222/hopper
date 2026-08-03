@@ -23,6 +23,31 @@ import { emptyDataset } from '../dataset.js';
 export const DEPSDEV_API = 'https://api.deps.dev/v3alpha';
 export const MAX_DEPTH = 5;
 
+/**
+ * What the fictional org actually has in its lockfiles.
+ *
+ * These are real published versions and the dependency graphs below them are
+ * real deps.dev responses — we are choosing which lockfile to ingest, not
+ * inventing data. Two reasons not to just take `latest`:
+ *
+ *  1. An enterprise monorepo is never on a package published three months ago.
+ *     Resolving `latest` models a greenfield repo, which is the one kind of
+ *     repo this product is useless for.
+ *  2. HERO_ADVISORY covers `brace-expansion < 1.1.18`. This pin set resolves
+ *     brace-expansion to 1.1.18 via minimatch@3 via glob@7, so the version on
+ *     the Package node lines up with the advisory a judge can read next to it.
+ *
+ * Anything not pinned here falls back to the deps.dev default (latest) version.
+ */
+export const LOCKFILE_PINS: Record<string, string> = {
+  express: '4.21.2',
+  next: '14.2.15',
+  webpack: '5.95.0',
+  jest: '29.7.0',
+  eslint: '8.57.1',
+  axios: '1.7.7',
+};
+
 const here = dirname(fileURLToPath(import.meta.url));
 
 export interface DepsDevNode {
@@ -104,13 +129,22 @@ interface VersionsReply {
   }>;
 }
 
-/** the version deps.dev calls default (i.e. what `npm i pkg` resolves to today) */
+/**
+ * The pinned lockfile version if we have one, otherwise the version deps.dev
+ * calls default (what `npm i pkg` resolves to today). Either way we go to the
+ * API for the published_at so the cache records provenance.
+ */
 export async function resolveVersion(
   pkg: string,
 ): Promise<{ version: string; published_at: string | null }> {
   const reply = await getJson<VersionsReply>(
     `${DEPSDEV_API}/systems/npm/packages/${encodeURIComponent(pkg)}`,
   );
+  const pin = LOCKFILE_PINS[pkg];
+  if (pin) {
+    const hit = reply.versions.find((v) => v.versionKey.version === pin);
+    if (hit) return { version: pin, published_at: hit.publishedAt ?? null };
+  }
   const usable = reply.versions.filter((v) => !v.isDeprecated);
   const chosen =
     usable.find((v) => v.isDefault) ??
