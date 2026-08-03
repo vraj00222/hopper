@@ -396,10 +396,15 @@ npm run dev                # server :8787 · console :5173 · site :5174
 
 | script | what it does |
 |---|---|
+| `npm run stop` | free the pinned ports (8787, 5173, 5174) if something stale is holding them |
 | `npm run gate` | the full Definition of Done — six package gates plus integration |
 | `npm run pull-live` | pull real advisories and rewrite the fixtures |
 | `npm run replay` | the entire arc from a fixture, **zero network** |
 | `npm run typecheck` | whole repo |
+
+Ports are pinned with `--strictPort` — a console that silently moves to `:5190` because
+something stale held `:5173` is worse than a loud failure when the URL is muscle memory
+mid-demo. `npm run dev` clears them first via `predev`, so this is normally invisible.
 
 `MOCK=true` is the default and runs everything with no network and no credentials. `MOCK=false` arms the live RocketRide bridge and the real advisory pull. The outbound action layer mocks itself when the credential store is empty, with each receipt stamped `mock: true`, so running live without a GitHub token shows the receipts it can honestly produce rather than three failures.
 

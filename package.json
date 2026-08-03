@@ -22,7 +22,9 @@
     "demo": "tsx packages/server/src/cli/demo.ts",
     "gate": "tsx scripts/gate.ts",
     "typecheck": "tsc -b --pretty",
-    "test": "npm run gate"
+    "test": "npm run gate",
+    "predev": "node scripts/free-ports.mjs",
+    "stop": "node scripts/free-ports.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
