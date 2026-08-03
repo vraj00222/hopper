@@ -33,7 +33,18 @@
   --lit-future: 0.3;
 
   --ease: cubic-bezier(0.16, 0.72, 0.24, 1);
-  --pad: 15px 20px;
+
+  /*
+   * Everything below is sized against the viewport rather than against the
+   * 1440x900 it was drawn on. The console is shown on whatever laptop and
+   * projector are in the room — 1024x768 through 1920x1080, often in a window
+   * that is not maximised — and it has to stay one screen with nothing clipped.
+   *
+   * The rule: fixed px only where a thing must not scale (hairlines, marks);
+   * clamp() everywhere a thing should breathe. Lower bounds are legibility
+   * floors, upper bounds are the values the design was drawn at.
+   */
+  --pad: clamp(9px, 1.5vh, 15px) clamp(12px, 1.4vw, 20px);
 }
 
 * { box-sizing: border-box; }
@@ -105,13 +116,24 @@ body {
 
 .shell {
   display: grid;
-  grid-template-rows: 46px minmax(0, 1fr) 44px;
+  /* the strip sizes to its content so a wrapped pipeline reason is never cut;
+     `main` takes whatever is left, so the page itself still never scrolls */
+  grid-template-rows: 46px minmax(0, 1fr) auto;
   height: 100%;
 }
 
+/*
+ * The left column was the wider of the two because the trace is the widest
+ * object on the screen. But the trace is an SVG that solves for whatever width
+ * it is handed, while the right column carries prose — agent rationale, bus
+ * transcript — that can only be read if the box is wide enough to hold it. The
+ * left column had a dead band above the trace; the right column was truncating
+ * the sentence the demo is about. So the ratio is inverted: the column that
+ * holds words gets the room.
+ */
 .main {
   display: grid;
-  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1fr);
   min-height: 0;
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
@@ -119,14 +141,24 @@ body {
 
 .col-left {
   display: grid;
-  grid-template-rows: minmax(0, 372px) minmax(0, 1fr);
+  /* was a flat 372px, which at 700px tall ate 61% of the shell and starved the
+     feed. Now it takes a share of the height and gives the rest back. */
+  grid-template-rows: minmax(0, clamp(232px, 40vh, 372px)) minmax(0, 1fr);
   min-height: 0;
   border-right: 1px solid var(--rule);
 }
 
+/*
+ * `auto` rows take their content height before the `1fr` row gets anything, so
+ * Consequence and Human sign-off were sizing themselves first and leaving
+ * Deliberation 96px to draw 334px of agent verdicts into — three of the four
+ * rows landed outside the panel and `overflow: hidden` ate them silently.
+ * Proportional rows let all four share what there is, and every panel body
+ * below scrolls rather than clips.
+ */
 .col-right {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) minmax(0, auto) minmax(0, auto) auto;
+  grid-template-rows: minmax(0, 1.5fr) minmax(0, 0.95fr) minmax(0, 0.8fr) auto;
   min-height: 0;
 }
 
@@ -213,7 +245,23 @@ body {
  * room, and it stays legible while every panel below it restages. The counters
  * moved right and got quieter; they are context, not headline.
  */
-.header { display: flex; align-items: center; gap: 15px; padding: 0 20px; min-width: 0; }
+.header { display: flex; align-items: center; gap: clamp(9px, 1vw, 15px); padding: 0 clamp(13px, 1.4vw, 20px); min-width: 0; }
+
+/*
+ * On a projector or an unmaximised window the counters and the vendor links
+ * were squeezing the one thing the header exists to say — which package, at
+ * which version, is in focus. Context yields to identity: the graph counter
+ * goes first, then the rest of the counters, then the external links.
+ */
+@media (max-width: 1360px) {
+  .header-stats > :nth-last-child(-n + 2) { display: none; }
+}
+@media (max-width: 1180px) {
+  .header-stats { display: none; }
+}
+@media (max-width: 1080px) {
+  .vendor-links .vlink:not(:last-child) { display: none; }
+}
 
 .wordmark {
   font-family: var(--display);
@@ -329,15 +377,20 @@ body {
 .adv { display: flex; gap: 22px; align-items: flex-start; flex: none; }
 
 .hop-count { display: flex; align-items: baseline; gap: 7px; line-height: 1; flex: none; }
+/* one of the two numbers the demo is about — it scales with the room rather
+   than sitting at the 58px it was drawn at on a 1440 laptop */
 .hop-count-n {
-  font-size: 58px;
-  line-height: 0.84;
+  font-size: clamp(38px, 2.6vw + 1.1vh, 58px);
+  /* 0.84 cropped the glyph's own ink box once the size became fluid. Archivo
+     Expanded's digits ink to ~1.05em, so the line box has to clear that — the
+     headline number may not be shaved at any viewport. */
+  line-height: 1.1;
   color: var(--signal);
   transition: color 460ms var(--ease);
 }
 .hop-count.is-breach .hop-count-n { color: var(--breach); }
 .hop-count.is-clear .hop-count-n { color: var(--clear); }
-.hop-count.is-idle .hop-count-n { color: var(--ink-ghost); font-size: 26px; line-height: 1.9; }
+.hop-count.is-idle .hop-count-n { color: var(--ink-ghost); font-size: clamp(20px, 1.8vw, 26px); line-height: 1.9; }
 .hop-count-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.22em; color: var(--muted); }
 
 .adv-body { min-width: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 6px; justify-content: center; }
@@ -456,32 +509,60 @@ body {
 }
 .hop-index.is-on { fill: var(--muted); }
 
+/*
+ * The clause line and its customer note used to sit on one nowrap row, which
+ * overflowed by ~20px as soon as there was more than one matching path. It
+ * wraps instead — the verdict is a sentence, not a status bar.
+ */
 .hop-verdict {
   flex: none;
   margin-top: 2px;
   min-height: 17px;
   display: flex;
   align-items: baseline;
-  gap: 13px;
-  white-space: nowrap;
+  flex-wrap: wrap;
+  gap: 2px clamp(8px, 1vw, 13px);
   min-width: 0;
-  font-size: 12px;
+  font-size: clamp(11px, 0.85vw, 12px);
   color: var(--clear);
   animation: sweepIn 460ms var(--ease) both;
 }
 .hop-verdict.is-breach { color: var(--breach); }
 .hop-verdict > span:first-child { flex: none; font-weight: 600; }
-.hop-verdict-note { color: var(--ink-faint); font-size: 10px; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-family: var(--mono); }
+.hop-verdict-note {
+  color: var(--ink-faint);
+  font-size: 10px;
+  min-width: 0;
+  font-family: var(--mono);
+  overflow-wrap: anywhere;
+}
 
 /* ── act 2 · deliberation ───────────────────────────────────────────────── */
 
-.agent-rows { display: flex; flex-direction: column; flex: none; position: relative; }
+/* `flex: none` is what made the rows refuse to shrink and spill out of the
+   panel. They may now shrink, and if there is genuinely not enough room the
+   rows scroll inside their own box instead of being cut off by the panel. */
+.agent-rows {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+  position: relative;
+}
+.agent-rows::-webkit-scrollbar { width: 5px; }
+.agent-rows::-webkit-scrollbar-thumb { background: var(--rule); }
 
 .agent-row {
   display: grid;
-  grid-template-columns: 12px 94px minmax(0, 1fr) 38px;
+  /* the name column gives ground first — the verdict and the rationale are what
+     have to stay readable when the window narrows */
+  grid-template-columns: 10px clamp(68px, 6.6vw, 94px) minmax(0, 1fr) 34px;
   align-items: baseline;
-  gap: 9px;
+  gap: clamp(6px, 0.7vw, 9px);
   padding: 5px 0 4px;
   border-bottom: 1px solid var(--rule-soft);
 }
@@ -534,17 +615,25 @@ body {
   animation: hopperScan 1150ms linear infinite;
 }
 
+/*
+ * The agent rationale is prose a human has to read, so it wraps rather than
+ * truncating on one line. Three lines is the ceiling for a normal row —
+ * enough for any rationale we emit, and it keeps four rows on a short screen.
+ */
 .agent-detail {
   grid-column: 3 / span 2;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: clamp(9.5px, 0.72vw, 10.5px);
   color: var(--ink-faint);
   line-height: 1.42;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  overflow-wrap: anywhere;
 }
+/*
+ * The dissenting row is the beat the whole demo is built around — "minimatch
+ * was bumped 9.0.3 → 9.0.5 59 seconds ago and staging broke". That sentence is
+ * never allowed to be the thing that gets cut, so the conflict row drops the
+ * clamp entirely and prints in full at every size.
+ */
 .agent-row.is-conflict .agent-detail { color: color-mix(in srgb, var(--breach) 70%, var(--paper)); }
 
 /* dissent is structural: a bracket in the gutter tying the two rows that
@@ -594,21 +683,40 @@ body {
 }
 .transcript-line {
   display: grid;
-  grid-template-columns: 58px minmax(0, 1fr);
-  gap: 9px;
+  grid-template-columns: clamp(46px, 4.4vw, 58px) minmax(0, 1fr);
+  gap: clamp(6px, 0.7vw, 9px);
   font-family: var(--mono);
   font-size: 10px;
-  line-height: 1.6;
+  line-height: 1.5;
   color: var(--ink-ghost);
+  padding-bottom: 2px;
 }
 .transcript-agent { color: var(--ink-faint); letter-spacing: 0.04em; }
 .transcript-line.is-conflict .transcript-msg { color: var(--breach); }
 .transcript-line.is-verdict .transcript-msg { color: var(--ink-dim); }
-.transcript-msg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/*
+ * A bus line was 1206px of text in a 533px box, ellipsised to about a third of
+ * itself. It wraps to two lines now; the transcript already scrolls, so length
+ * costs scroll rather than meaning. The full string is on the element's title.
+ */
+.transcript-msg { overflow-wrap: anywhere; }
 
 /* ── act 3 · consequence — one chain, not three boxes ───────────────────── */
 
-.chain { display: flex; flex-direction: column; flex: none; }
+/* same shrink rule as the agent rows: the chain gives ground and scrolls
+   inside the panel rather than letting the panel cut it off */
+.chain {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+.chain::-webkit-scrollbar { width: 5px; }
+.chain::-webkit-scrollbar-thumb { background: var(--rule); }
 
 .chain-link {
   display: grid;
@@ -648,18 +756,20 @@ body {
 .chain-title { font-size: 12.5px; color: var(--paper); line-height: 1.3; }
 .chain-sub { font-family: var(--mono); font-size: 9.5px; color: var(--ink-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* the clock: the one object on the page allowed to be large */
+/* the clock: the one object on the page allowed to be large. The obligation
+   countdown must stay legible from the back of the room on a 1024 projector and
+   must not eat the panel on a short window, so it scales with both axes. */
 .clock-face {
-  font-size: 43px;
+  font-size: clamp(30px, 2.1vw + 0.9vh, 46px);
   line-height: 1.04;
   color: var(--paper);
   margin: 1px 0 2px -2px;
   transition: color 420ms var(--ease);
 }
 .clock-face.is-urgent { color: var(--breach); }
-.clock-face.is-idle { font-size: 18px; letter-spacing: 0.16em; color: var(--ink-ghost); line-height: 2.2; }
+.clock-face.is-idle { font-size: clamp(15px, 1.4vw, 18px); letter-spacing: 0.16em; color: var(--ink-ghost); line-height: 2.2; }
 
-.clock-meta { display: flex; justify-content: space-between; gap: 10px; font-family: var(--mono); font-size: 9.5px; color: var(--ink-faint); }
+.clock-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; font-family: var(--mono); font-size: 9.5px; color: var(--ink-faint); }
 .clock-track { position: relative; height: 2px; background: var(--rule-soft); margin-top: 7px; }
 .clock-track-fill { position: absolute; inset: 0 auto 0 0; background: var(--signal); transition: width 1s linear, background 420ms var(--ease); }
 .clock-track-fill.is-urgent { background: var(--breach); }
@@ -667,6 +777,19 @@ body {
 /* ── act 4 · the gate ───────────────────────────────────────────────────── */
 
 .gate-stack { min-height: 0; overflow-y: auto; }
+
+/* The sign-off panel stacks a gate block, signed receipts and blocked receipts
+   with no single wrapper to scroll, so the panel itself takes the scroll. It is
+   the third row of the right column. */
+.col-right > .panel:nth-child(3) {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+.col-right > .panel:nth-child(3)::-webkit-scrollbar { width: 5px; }
+.col-right > .panel:nth-child(3)::-webkit-scrollbar-thumb { background: var(--rule); }
+.gate-block { flex: none; }
 
 /* the one thing on this screen that cannot happen on its own is the one thing
    drawn inside a border — everything else is hairlines and space */
@@ -690,10 +813,7 @@ body {
   font-size: 9.5px;
   color: var(--ink-faint);
   line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  overflow-wrap: anywhere;
   margin-top: 3px;
 }
 .gate-caption {
@@ -880,7 +1000,14 @@ body {
 
 /* ── pipeline strip ─────────────────────────────────────────────────────── */
 
-.strip { display: flex; align-items: center; gap: 16px; padding: 0 20px; min-width: 0; }
+.strip {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 1.1vw, 16px);
+  padding: 5px clamp(13px, 1.4vw, 20px);
+  min-height: 44px;
+  min-width: 0;
+}
 .strip-selection { display: flex; align-items: baseline; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--paper); flex: none; }
 .strip-class { color: var(--ink-faint); }
 .strip-arrow { color: var(--ink-ghost); }
@@ -894,7 +1021,17 @@ body {
   flex: none;
   animation: bracketIn 460ms var(--ease) both;
 }
-.strip-reason { flex: 1; min-width: 0; font-family: var(--mono); font-size: 9.5px; color: var(--ink-ghost); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* the selection rationale is the meta reveal — it wraps onto a second line
+   rather than being ellipsised away on a narrow window */
+.strip-reason {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  line-height: 1.35;
+  color: var(--ink-ghost);
+  overflow-wrap: anywhere;
+}
 .strip.is-changed .strip-pipe { color: var(--signal); }
 
 .demo-bar { display: flex; align-items: center; gap: 5px; flex: none; }
