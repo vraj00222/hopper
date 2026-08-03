@@ -1,54 +1,38 @@
 /**
- * The four verdicts, arriving one at a time, with the agent bus underneath.
- * The CONFLICT row is the beat that wins — the Patch Engineer disagreeing, in
- * oxide, citing a precedent this system wrote ninety seconds ago.
+ * Act 2 — deliberation.
+ *
+ * Four agents, shown working before they are shown deciding. A row that has not
+ * reported yet carries a scan, not a dash, because "thinking" and "nothing
+ * here" are different states and the screen should say which.
+ *
+ * The disagreement is drawn as structure: when the arbiter records a conflict,
+ * a bracket ties the two rows that disagree together in the gutter. That is
+ * read straight off the verdicts rather than decorating the oxide label.
  */
 import { useEffect, useRef } from 'react';
 import type { AgentBusEvent, FocusView } from '@hopper/contracts';
 
-type Row = {
-  key: 'reachability' | 'patch' | 'obligation' | 'arbiter';
-  label: string;
-  verdict?: { verdict: string; confidence: number; detail: string; conflict?: boolean };
-};
+type Key = 'reachability' | 'patch' | 'obligation' | 'arbiter';
 
-const LABELS: Array<[Row['key'], string]> = [
+const ROWS: Array<[Key, string]> = [
   ['reachability', 'Reachability'],
-  ['patch', 'Patch Eng.'],
+  ['patch', 'Patch engineer'],
   ['obligation', 'Obligation'],
   ['arbiter', 'Arbiter'],
 ];
 
-/** a drawn mark, not a dingbat — nothing on this page is an emoji */
-function ConflictMark() {
-  return (
-    <svg className="conflict-mark" width="11" height="10" viewBox="0 0 11 10" aria-hidden="true">
-      <path
-        d="M5.5 0.6 L10.6 9.4 H0.4 Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.1"
-        strokeLinejoin="round"
-      />
-      <path d="M5.5 3.6 V6.4" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function rowClass(r: Row): string {
-  if (!r.verdict) return 'is-pending';
-  if (r.verdict.conflict === true) return 'is-conflict';
-  if (r.key === 'arbiter' && r.verdict.verdict.toUpperCase().includes('SUPPRESS')) return 'is-clear';
-  if (r.verdict.verdict.toUpperCase().startsWith('NOT REACHABLE')) return 'is-clear';
-  return '';
-}
-
-/** fixed-width agent tags keep the bus reading like a tape, not a chat log */
 const BUS_TAG: Record<string, string> = {
   reachability: 'REACH',
   'patch-engineer': 'PATCH',
   'obligation-officer': 'OBLIG',
   arbiter: 'ARBIT',
+};
+
+const BUS_ROW: Record<string, Key> = {
+  reachability: 'reachability',
+  'patch-engineer': 'patch',
+  'obligation-officer': 'obligation',
+  arbiter: 'arbiter',
 };
 
 function Transcript({ events }: { events: AgentBusEvent[] }) {
@@ -60,67 +44,86 @@ function Transcript({ events }: { events: AgentBusEvent[] }) {
 
   return (
     <div className="transcript scroll" ref={ref}>
-      {events.length === 0 && <div className="empty">agent bus idle</div>}
+      {events.length === 0 && <div className="empty">bus quiet</div>}
       {events.map((e, i) => (
-        <div
-          key={`${e.agent}-${e.phase}-${i}`}
-          className={`transcript-line is-${e.phase}`}
-        >
+        <div key={`${e.agent}-${e.phase}-${i}`} className={`transcript-line is-${e.phase}`}>
           <span className="transcript-agent">
             {String(i + 1).padStart(2, '0')} {BUS_TAG[e.agent] ?? e.agent}
           </span>
-          <span className="transcript-msg">
-            {e.message}
-            {typeof e.confidence === 'number' ? `  ${e.confidence.toFixed(2)}` : ''}
-          </span>
+          <span className="transcript-msg">{e.message}</span>
         </div>
       ))}
     </div>
   );
 }
 
-export function AgentsPanel({ focus }: { focus: FocusView | null }) {
-  const rows: Row[] = LABELS.map(([key, label]) => ({
-    key,
-    label,
-    verdict: focus?.verdicts[key],
-  }));
-  const arrived = rows.filter((r) => r.verdict);
+export function AgentsPanel({ focus, lit }: { focus: FocusView | null; lit: string }) {
+  const verdicts = focus?.verdicts ?? {};
+  const transcript = focus?.transcript ?? [];
+
+  // an agent that has spoken on the bus but not yet returned a verdict is
+  // working — that is the state worth showing
+  const working = new Set<Key>();
+  for (const e of transcript) {
+    const row = BUS_ROW[e.agent];
+    if (row && !verdicts[row]) working.add(row);
+  }
+
+  const settled = ROWS.filter(([k]) => verdicts[k]).length;
+  const dissent = verdicts.patch?.conflict === true;
+  const rowPct = 100 / ROWS.length;
 
   return (
-    <section className="panel agents-panel">
+    <section className="panel" data-lit={lit}>
       <div className="panel-head">
-        <h2 className="panel-title">Agents</h2>
+        <h2 className="label">Deliberation</h2>
         <span className="panel-note">
-          via Guild {arrived.length > 0 ? `· ${arrived.length}/4` : ''}
+          Guild · {settled}/4{dissent ? ' · dissent' : ''}
         </span>
       </div>
 
       <div className="agent-rows">
-        {rows.map((r) =>
-          r.verdict ? (
-            <div key={r.key} className={`agent-row ${rowClass(r)}`}>
-              <span className="agent-caret">&#9656;</span>
-              <span className="agent-name">{r.label}</span>
-              <span className="agent-verdict">
-                {r.verdict.conflict === true && <ConflictMark />}
-                {r.verdict.verdict}
-              </span>
-              <span className="agent-conf">{r.verdict.confidence.toFixed(2)}</span>
-              <span className="agent-detail">{r.verdict.detail}</span>
+        {/* the bracket spans reachability..patch — the two that disagree */}
+        {dissent && (
+          <>
+            <div className="dissent" style={{ top: '3%', height: `${rowPct * 2 - 6}%` }} />
+            <div className="dissent-tag" style={{ left: 9, top: '11%' }}>
+              DISSENT
             </div>
-          ) : (
-            <div key={r.key} className="agent-row is-pending">
-              <span className="agent-caret">&#9656;</span>
-              <span className="agent-name">{r.label}</span>
-              <span className="agent-verdict">&mdash;</span>
-              <span className="agent-conf" />
-            </div>
-          ),
+          </>
         )}
+
+        {ROWS.map(([key, label]) => {
+          const v = verdicts[key];
+          const isWorking = !v && working.has(key);
+          const conflict = key === 'patch' && verdicts.patch?.conflict === true;
+          const calm =
+            (key === 'arbiter' && (v?.verdict ?? '').toUpperCase().includes('SUPPRESS')) ||
+            (v?.verdict ?? '').toUpperCase().startsWith('NOT REACHABLE');
+
+          return (
+            <div
+              key={key}
+              className={[
+                'agent-row',
+                v ? 'is-settled' : 'is-idle',
+                conflict ? 'is-conflict' : '',
+                calm ? 'is-clear' : '',
+              ].join(' ')}
+            >
+              <span />
+              <span className="agent-name">{label}</span>
+              <span className="agent-verdict">
+                {v ? v.verdict : isWorking ? <span className="agent-working" /> : '—'}
+              </span>
+              <span className="agent-conf">{v ? v.confidence.toFixed(2) : ''}</span>
+              {v && <span className="agent-detail">{v.detail}</span>}
+            </div>
+          );
+        })}
       </div>
 
-      <Transcript events={focus?.transcript ?? []} />
+      <Transcript events={transcript} />
     </section>
   );
 }

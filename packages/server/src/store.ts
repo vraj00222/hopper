@@ -19,6 +19,18 @@ import {
 } from '@hopper/contracts';
 import type { Hopper } from './wire.js';
 
+/**
+ * FalkorDB returns nodes as `{id, labels, properties}`. The API contract
+ * promises the property bag, so unwrap at the boundary — a consumer receiving
+ * the envelope will crash on the first field access, and did.
+ */
+function unwrapNode<T>(value: unknown): T | null {
+  if (!value || typeof value !== 'object') return null;
+  const node = value as { properties?: unknown; labels?: unknown };
+  if (node.properties && typeof node.properties === 'object') return node.properties as T;
+  return value as T;
+}
+
 const UNKNOWN_CLASS: AdvisoryClass = {
   id: 'unknown',
   ecosystem: 'npm',
@@ -247,7 +259,7 @@ export class Store {
         { id: ghsaId },
       )
       .catch(() => []);
-    const advisory = (rows[0]?.a ?? null) as unknown as Advisory | null;
+    const advisory = unwrapNode<Advisory>(rows[0]?.a);
     if (!advisory && !run) return null;
 
     const [hop_paths, absence, precedents, oncall, audit] = await Promise.all([

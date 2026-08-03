@@ -25,9 +25,17 @@ import {
   PRECEDENT_CHAIN,
   SUPPRESSED_CHAIN,
 } from './fixture.js';
-import { SUPPRESSION_DEPTH, scheduleHops } from './lib/hops.js';
+import {
+  SUPPRESSION_DEPTH,
+  fitLabel,
+  layoutTrace,
+  ordinalsAreHops,
+  scheduleHops,
+} from './lib/hops.js';
 import {
   approvalMessages,
+  currentSelection,
+  hopCountFor,
   initialUi,
   isBlocked,
   primaryClock,
@@ -35,9 +43,106 @@ import {
   reduce,
   reduceAll,
   splitFeed,
+  splitReceipts,
+  traceWave,
 } from './lib/reducer.js';
+import { deepUnwrap, isGraphNode } from './lib/normalize.js';
 import { contractLoaded, validateAppState } from './lib/validate.js';
 import type { UiState } from './lib/types.js';
+
+// ─── fixtures for the live-mode shapes (section 7) ──────────────────────────
+// These reproduce what a real server puts on the wire: no `focus` frames, no
+// `agent` frames, the agent payload inside run.agent_result, a 10-node chain
+// carrying 6 dependency hops, and a receipt recording a blocked action.
+
+function heroFocusFixture() {
+  const last = beat1.cues
+    .map((c) => c.msg)
+    .filter((m) => m.type === 'focus')
+    .pop();
+  if (!last || last.type !== 'focus') throw new Error('beat 1 has no focus cue');
+  return last.focus;
+}
+
+const LIVE_CHAIN = [
+  'brace-expansion', 'minimatch', 'glob', '@jest/reporters', '@jest/core',
+  'jest', 'platform-build', 'build-api', 'Northwind Systems', '§7.3',
+];
+
+const APPROVAL_PENDING = {
+  id: 'apv_live_1',
+  action: 'notify_customer' as const,
+  ghsa_id: HERO_GHSA,
+  title: 'Notify Northwind Systems under §7.3',
+  body: 'security notification under §7.3',
+  requested_at: '2026-08-03T19:10:32Z',
+  status: 'pending' as const,
+};
+
+const RECEIPT_OK = {
+  action: 'open_pr' as const,
+  ok: true,
+  mock: true,
+  ref: 'https://github.com/hopper-demo/platform-build/pull/1208',
+  detail: 'bump brace-expansion to 1.1.18',
+  ts: '2026-08-03T19:10:32Z',
+  latency_ms: 37,
+};
+
+const RECEIPT_BLOCKED = {
+  action: 'notify_customer' as const,
+  ok: false,
+  mock: true,
+  ref: '',
+  detail: 'HITL gate: no approval token was presented, so nothing was sent',
+  ts: '2026-08-03T19:10:32Z',
+  latency_ms: 0,
+};
+
+const LIVE_RUN = {
+  run_id: 'run_live_1',
+  pipeline_id: 'pipe_deep_traversal',
+  ghsa_id: HERO_GHSA,
+  advisory_class: 'npm/critical/deep',
+  started_at: '2026-08-03T19:10:32Z',
+  ended_at: '2026-08-03T19:10:32.5Z',
+  latency_ms: 112,
+  ok: true,
+  outcome: 'escalated' as const,
+  traces: [],
+  hop_paths: [
+    {
+      customer: 'Northwind Systems',
+      customer_tier: 'enterprise',
+      arr: 2_400_000,
+      service: 'build-api',
+      repo: 'platform-build',
+      notice_window: 24,
+      clause_ref: '§7.3',
+      clause_type: 'breach_notification',
+      hops: 6,
+      chain: LIVE_CHAIN,
+      contract_id: 'CTR-NWS-2024-011',
+      governing_law: 'Delaware, USA',
+    },
+  ],
+  receipts: [RECEIPT_OK, RECEIPT_BLOCKED],
+  selection_reason: 'npm/critical/deep -> deep-traversal, 11 points ahead',
+  agent_result: {
+    ghsa_id: HERO_GHSA,
+    session_id: 'sess_live',
+    reachability: { agent: 'reachability', reachable: true, confidence: 0.92, call_path: [], telemetry_hits: 6031, rationale: 'expand() executed 6031 times in build-api' },
+    patch: { agent: 'patch-engineer', safe_bump: false, target: '9.0.5', breaking_risk: 'high', confidence: 0.92, precedent_ids: ['patch:minimatch:9.0.3>9.0.5'], rationale: 'bumped 44 seconds ago and staging broke' },
+    obligation: { agent: 'obligation-officer', obligated: true, clauses: [{ customer: 'Northwind Systems', clause_ref: '§7.3', hours: 24, deadline_utc: '2026-08-04T16:35:32Z' }], deadline_utc: '2026-08-04T16:35:32Z', notice_draft: '', confidence: 0.95, rationale: '4 breach-notification clauses reach this advisory' },
+    arbiter: { agent: 'arbiter', decision: 'human', conflict: true, conflict_between: ['reachability', 'patch-engineer'], actions: ['notify_customer'], confidence: 0.94, rationale: 'telling a customer is never an automatic act' },
+    conflict: true,
+    transcript: [
+      { kind: 'agent-bus', agent: 'arbiter', ghsa_id: HERO_GHSA, phase: 'started', message: 'ingested' },
+      { kind: 'agent-bus', agent: 'arbiter', ghsa_id: HERO_GHSA, phase: 'resolved', message: 'escalated' },
+    ],
+    approvals: [APPROVAL_PENDING],
+  },
+};
 
 let failures = 0;
 let checks = 0;
@@ -345,6 +450,138 @@ assert(after === before - 5, 'the offline 1Hz ticker advances the clock', `${fmt
 assert(
   fmtCountdown(3 * 3600 + 59) === 'T-03:00:59',
   'the under-4h oxide threshold renders correctly',
+);
+
+// ── 7. the shapes a live server actually sends ─────────────────────────────
+section('7  live-mode payloads the fixture cannot produce');
+
+// 7a — FalkorDB node envelopes must not reach the render tree
+const wrapped = {
+  ...INITIAL_STATE,
+  focus: {
+    ...beat1.cues.map((c) => c.msg).find((m) => m.type === 'focus')!,
+  },
+} as unknown;
+const nodeShaped = {
+  id: 452,
+  labels: ['Advisory'],
+  properties: { ghsa_id: HERO_GHSA, cvss: 7.5, severity: 'HIGH', package_name: 'brace-expansion' },
+};
+const unwrapped = deepUnwrap(nodeShaped) as Record<string, unknown>;
+assert(isGraphNode(nodeShaped), 'a {id,labels,properties} envelope is detected');
+assert(
+  unwrapped.ghsa_id === HERO_GHSA && unwrapped.cvss === 7.5,
+  'deepUnwrap flattens it to the contract shape',
+);
+assert(!isGraphNode(unwrapped), 'the unwrapped value is a plain object');
+const liveState = reduce(initialUi(INITIAL_STATE), {
+  type: 'state',
+  state: { ...INITIAL_STATE, focus: { ...heroFocusFixture(), advisory: nodeShaped } } as never,
+});
+assert(
+  liveState.app.focus?.advisory?.ghsa_id === HERO_GHSA,
+  'a node-wrapped advisory survives the reducer',
+  String(liveState.app.focus?.advisory?.ghsa_id),
+);
+assert(Number.isFinite(liveState.app.focus?.advisory?.cvss ?? NaN), 'cvss is readable, not undefined');
+void wrapped;
+
+// 7b — agent rows seed from the connect snapshot and from run.agent_result
+const snapshotOnly = reduce(initialUi(INITIAL_STATE), {
+  type: 'state',
+  state: { ...INITIAL_STATE, focus: heroFocusFixture() } as never,
+});
+assert(
+  Object.keys(snapshotOnly.app.focus?.verdicts ?? {}).length === 4,
+  'verdicts seed from the initial state message (arc completed before connect)',
+);
+assert(
+  (snapshotOnly.app.focus?.transcript ?? []).length > 0,
+  'the bus tape seeds from the initial state message too',
+);
+
+const fromRun = reduce(initialUi(INITIAL_STATE), { type: 'run', run: LIVE_RUN as never });
+assert(
+  Object.keys(fromRun.app.focus?.verdicts ?? {}).length === 4,
+  'verdicts fill in from run.agent_result when no focus frame is ever sent',
+  Object.keys(fromRun.app.focus?.verdicts ?? {}).join(','),
+);
+assert(fromRun.app.focus?.verdicts.patch?.conflict === true, 'the dissent survives the mapping');
+assert(
+  (fromRun.app.focus?.transcript ?? []).length === 2,
+  'the transcript comes across with it',
+);
+assert(
+  fromRun.app.approvals.some((a) => a.status === 'pending'),
+  'the pending approval rides in on the run as well',
+);
+
+// 7c — ok:false is never executed
+const okFalse = reduceAll(initialUi(INITIAL_STATE), [
+  { type: 'receipt', receipt: { ...RECEIPT_OK } },
+  { type: 'receipt', receipt: { ...RECEIPT_BLOCKED } },
+]);
+const split = splitReceipts(okFalse.app.receipts, []);
+assert(split.executed.length === 1, 'only ok:true receipts count as executed', `${split.executed.length}`);
+assert(split.held.length === 1, 'the ok:false receipt is held, not executed');
+assert(
+  splitReceipts(okFalse.app.receipts, [{ ...APPROVAL_PENDING }]).held.length === 0,
+  'a blocked receipt whose action is still gated is told once, as the gate',
+);
+assert(receiptFor(okFalse, 'notify_customer') === null, 'a failed receipt is not a receipt');
+
+// 7d — hops come off the contract, never off chain length
+const tenNodeUi = reduce(initialUi(INITIAL_STATE), { type: 'run', run: LIVE_RUN as never });
+assert(
+  hopCountFor(tenNodeUi) === 6,
+  'hop count is HopPath.hops (6), not chain length (10)',
+  `chain=${LIVE_RUN.hop_paths[0].chain.length} hops=${hopCountFor(tenNodeUi)}`,
+);
+const restingTrace = traceWave(tenNodeUi);
+assert(
+  restingTrace?.total === 10 && restingTrace.arrived === 10 && restingTrace.terminal === true,
+  'with no hop stream the trace is reconstructed at rest from the chain',
+  `${restingTrace?.total} rings`,
+);
+assert(
+  currentSelection(tenNodeUi)?.pipeline_id === LIVE_RUN.pipeline_id,
+  'the pipeline strip falls back to the latest run when no selection was pushed',
+);
+
+// 7e — the trace fits its container at every length we might be handed
+let boundsOk = true;
+let staggerOk = true;
+let worst = '';
+for (let n = 2; n <= 16; n += 1) {
+  const t = layoutTrace(n);
+  for (const ring of t.rings) {
+    if (ring.x - t.radius < 0 || ring.x + t.radius > t.width) {
+      boundsOk = false;
+      worst = `n=${n} ring x=${ring.x.toFixed(1)}`;
+    }
+    const half = (t.maxChars * 0.6 * t.fontSize) / 2;
+    if (ring.labelX - half < -1 || ring.labelX + half > t.width + 1) {
+      boundsOk = false;
+      worst = `n=${n} label x=${ring.labelX.toFixed(1)}`;
+    }
+  }
+  // captions on the same row must not overlap: same-row rings are 2 pitches apart
+  const rowGap = t.stagger ? t.pitch * 2 : t.pitch;
+  if (n > 1 && t.maxChars * 0.6 * t.fontSize > rowGap + 0.5) {
+    staggerOk = false;
+    worst = `n=${n} caption ${(t.maxChars * 0.6 * t.fontSize).toFixed(0)} > gap ${rowGap.toFixed(0)}`;
+  }
+}
+assert(boundsOk, 'every ring and caption stays inside the panel for 2..16 rings', worst);
+assert(staggerOk, 'captions never overlap their neighbour on the same row', worst);
+assert(
+  fitLabel('@jest/reporters', 8).length <= 8 && fitLabel('glob', 20) === 'glob',
+  'long captions get a middle ellipsis, short ones are untouched',
+  fitLabel('@jest/reporters', 8),
+);
+assert(
+  ordinalsAreHops(7, 5) && !ordinalsAreHops(10, 6),
+  'ring ordinals are only drawn when they really are hop numbers',
 );
 
 // ── summary ────────────────────────────────────────────────────────────────

@@ -26,7 +26,7 @@ export function PipelineStrip({
 
   return (
     <footer className={`strip${changed ? ' is-changed' : ''}`}>
-      <span className="strip-label">Pipeline</span>
+      <span className="label">Pipeline</span>
 
       {selection ? (
         <>

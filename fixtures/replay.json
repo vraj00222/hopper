@@ -1,8 +1,8 @@
 [
   {
-    "id": "evt_msdlu8x601f",
+    "id": "evt_msdmec8001f",
     "topic": "advisories",
-    "ts": "2026-08-03T19:10:58.986Z",
+    "ts": "2026-08-03T19:26:36.384Z",
     "seq": 0,
     "payload": {
       "kind": "advisory",
@@ -20,13 +20,13 @@
         "fixed_in": "1.1.18",
         "source": "fixture"
       },
-      "received_at": "2026-08-03T19:10:58.986Z"
+      "received_at": "2026-08-03T19:26:36.384Z"
     }
   },
   {
-    "id": "evt_msdlu8x701g",
+    "id": "evt_msdmec8101g",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.386Z",
+    "ts": "2026-08-03T19:26:36.784Z",
     "seq": 1,
     "payload": {
       "kind": "telemetry",
@@ -35,13 +35,13 @@
       "symbol": "expand",
       "calls": 1988,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701h",
+    "id": "evt_msdmec8101h",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.431Z",
+    "ts": "2026-08-03T19:26:36.829Z",
     "seq": 2,
     "payload": {
       "kind": "telemetry",
@@ -50,13 +50,13 @@
       "symbol": "expand",
       "calls": 952,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701i",
+    "id": "evt_msdmec8101i",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.476Z",
+    "ts": "2026-08-03T19:26:36.874Z",
     "seq": 3,
     "payload": {
       "kind": "telemetry",
@@ -65,13 +65,13 @@
       "symbol": "expand",
       "calls": 142,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701j",
+    "id": "evt_msdmec8101j",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.521Z",
+    "ts": "2026-08-03T19:26:36.919Z",
     "seq": 4,
     "payload": {
       "kind": "telemetry",
@@ -80,13 +80,13 @@
       "symbol": "parseCommaParts",
       "calls": 679,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701k",
+    "id": "evt_msdmec8101k",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.566Z",
+    "ts": "2026-08-03T19:26:36.964Z",
     "seq": 5,
     "payload": {
       "kind": "telemetry",
@@ -95,13 +95,13 @@
       "symbol": "minimatch",
       "calls": 1951,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701l",
+    "id": "evt_msdmec8101l",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.611Z",
+    "ts": "2026-08-03T19:26:37.009Z",
     "seq": 6,
     "payload": {
       "kind": "telemetry",
@@ -110,13 +110,13 @@
       "symbol": "braceExpand",
       "calls": 1144,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701m",
+    "id": "evt_msdmec8101m",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.656Z",
+    "ts": "2026-08-03T19:26:37.054Z",
     "seq": 7,
     "payload": {
       "kind": "telemetry",
@@ -125,13 +125,13 @@
       "symbol": "globSync",
       "calls": 614,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701n",
+    "id": "evt_msdmec8101n",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.701Z",
+    "ts": "2026-08-03T19:26:37.099Z",
     "seq": 8,
     "payload": {
       "kind": "telemetry",
@@ -140,13 +140,13 @@
       "symbol": "globSync",
       "calls": 467,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701o",
+    "id": "evt_msdmec8101o",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.746Z",
+    "ts": "2026-08-03T19:26:37.144Z",
     "seq": 9,
     "payload": {
       "kind": "telemetry",
@@ -155,13 +155,13 @@
       "symbol": "runCLI",
       "calls": 91,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701p",
+    "id": "evt_msdmec8101p",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.791Z",
+    "ts": "2026-08-03T19:26:37.189Z",
     "seq": 10,
     "payload": {
       "kind": "telemetry",
@@ -170,13 +170,13 @@
       "symbol": "handle",
       "calls": 16958,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701q",
+    "id": "evt_msdmec8101q",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.836Z",
+    "ts": "2026-08-03T19:26:37.234Z",
     "seq": 11,
     "payload": {
       "kind": "telemetry",
@@ -185,13 +185,13 @@
       "symbol": "request",
       "calls": 9386,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701r",
+    "id": "evt_msdmec8101r",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.881Z",
+    "ts": "2026-08-03T19:26:37.279Z",
     "seq": 12,
     "payload": {
       "kind": "telemetry",
@@ -200,13 +200,13 @@
       "symbol": "request",
       "calls": 3283,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701s",
+    "id": "evt_msdmec8101s",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.926Z",
+    "ts": "2026-08-03T19:26:37.324Z",
     "seq": 13,
     "payload": {
       "kind": "telemetry",
@@ -215,13 +215,13 @@
       "symbol": "handle",
       "calls": 6694,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701t",
+    "id": "evt_msdmec8101t",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:10:59.971Z",
+    "ts": "2026-08-03T19:26:37.369Z",
     "seq": 14,
     "payload": {
       "kind": "telemetry",
@@ -230,13 +230,13 @@
       "symbol": "compile",
       "calls": 248,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701u",
+    "id": "evt_msdmec8101u",
     "topic": "telemetry",
-    "ts": "2026-08-03T19:11:00.016Z",
+    "ts": "2026-08-03T19:26:37.414Z",
     "seq": 15,
     "payload": {
       "kind": "telemetry",
@@ -245,19 +245,19 @@
       "symbol": "lintFiles",
       "calls": 356,
       "window_seconds": 900,
-      "observed_at": "2026-08-03T19:10:58.987Z"
+      "observed_at": "2026-08-03T19:26:36.385Z"
     }
   },
   {
-    "id": "evt_msdlu8x701v",
+    "id": "evt_msdmec8101v",
     "topic": "clock",
-    "ts": "2026-08-03T19:11:00.386Z",
+    "ts": "2026-08-03T19:26:37.784Z",
     "seq": 16,
     "payload": {
       "kind": "clock",
       "customer": "Northwind Systems",
       "ghsa_id": "GHSA-rgw5-rvv9-x895",
-      "deadline_utc": "2026-08-04T19:11:00.386Z",
+      "deadline_utc": "2026-08-04T19:26:37.784Z",
       "remaining_seconds": 86400,
       "window_hours": 24,
       "clause_ref": "§7.3",
@@ -265,15 +265,15 @@
     }
   },
   {
-    "id": "evt_msdlu8x701w",
+    "id": "evt_msdmec8101w",
     "topic": "clock",
-    "ts": "2026-08-03T19:11:01.386Z",
+    "ts": "2026-08-03T19:26:38.784Z",
     "seq": 17,
     "payload": {
       "kind": "clock",
       "customer": "Northwind Systems",
       "ghsa_id": "GHSA-rgw5-rvv9-x895",
-      "deadline_utc": "2026-08-04T19:11:00.386Z",
+      "deadline_utc": "2026-08-04T19:26:37.784Z",
       "remaining_seconds": 86399,
       "window_hours": 24,
       "clause_ref": "§7.3",
@@ -281,15 +281,15 @@
     }
   },
   {
-    "id": "evt_msdlu8x701x",
+    "id": "evt_msdmec8101x",
     "topic": "clock",
-    "ts": "2026-08-03T19:11:02.386Z",
+    "ts": "2026-08-03T19:26:39.784Z",
     "seq": 18,
     "payload": {
       "kind": "clock",
       "customer": "Northwind Systems",
       "ghsa_id": "GHSA-rgw5-rvv9-x895",
-      "deadline_utc": "2026-08-04T19:11:00.386Z",
+      "deadline_utc": "2026-08-04T19:26:37.784Z",
       "remaining_seconds": 86398,
       "window_hours": 24,
       "clause_ref": "§7.3",
@@ -297,15 +297,15 @@
     }
   },
   {
-    "id": "evt_msdlu8x701y",
+    "id": "evt_msdmec8101y",
     "topic": "clock",
-    "ts": "2026-08-03T19:11:03.386Z",
+    "ts": "2026-08-03T19:26:40.784Z",
     "seq": 19,
     "payload": {
       "kind": "clock",
       "customer": "Northwind Systems",
       "ghsa_id": "GHSA-rgw5-rvv9-x895",
-      "deadline_utc": "2026-08-04T19:11:00.386Z",
+      "deadline_utc": "2026-08-04T19:26:37.784Z",
       "remaining_seconds": 86397,
       "window_hours": 24,
       "clause_ref": "§7.3",
@@ -313,15 +313,15 @@
     }
   },
   {
-    "id": "evt_msdlu8x701z",
+    "id": "evt_msdmec8101z",
     "topic": "clock",
-    "ts": "2026-08-03T19:11:04.386Z",
+    "ts": "2026-08-03T19:26:41.784Z",
     "seq": 20,
     "payload": {
       "kind": "clock",
       "customer": "Northwind Systems",
       "ghsa_id": "GHSA-rgw5-rvv9-x895",
-      "deadline_utc": "2026-08-04T19:11:00.386Z",
+      "deadline_utc": "2026-08-04T19:26:37.784Z",
       "remaining_seconds": 86396,
       "window_hours": 24,
       "clause_ref": "§7.3",
@@ -329,15 +329,15 @@
     }
   },
   {
-    "id": "evt_msdlu8x7020",
+    "id": "evt_msdmec81020",
     "topic": "clock",
-    "ts": "2026-08-03T19:11:05.386Z",
+    "ts": "2026-08-03T19:26:42.784Z",
     "seq": 21,
     "payload": {
       "kind": "clock",
       "customer": "Northwind Systems",
       "ghsa_id": "GHSA-rgw5-rvv9-x895",
-      "deadline_utc": "2026-08-04T19:11:00.386Z",
+      "deadline_utc": "2026-08-04T19:26:37.784Z",
       "remaining_seconds": 86395,
       "window_hours": 24,
       "clause_ref": "§7.3",
@@ -345,23 +345,23 @@
     }
   },
   {
-    "id": "evt_msdlu8x7021",
+    "id": "evt_msdmec81021",
     "topic": "kev-delta",
-    "ts": "2026-08-03T19:11:06.186Z",
+    "ts": "2026-08-03T19:26:43.584Z",
     "seq": 22,
     "payload": {
       "kind": "kev-delta",
       "cve_id": "CVE-2026-69152",
       "ghsa_id": "GHSA-rgw5-rvv9-x895",
-      "added_at": "2026-08-03T19:11:06.186Z",
+      "added_at": "2026-08-03T19:26:43.584Z",
       "known_ransomware": false,
       "action": "escalate"
     }
   },
   {
-    "id": "evt_msdlu8x7022",
+    "id": "evt_msdmec81022",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:07.186Z",
+    "ts": "2026-08-03T19:26:44.584Z",
     "seq": 23,
     "payload": {
       "kind": "advisory",
@@ -379,13 +379,13 @@
         "fixed_in": "17.3.12",
         "source": "fixture"
       },
-      "received_at": "2026-08-03T19:11:07.186Z"
+      "received_at": "2026-08-03T19:26:44.584Z"
     }
   },
   {
-    "id": "evt_msdlu8x7023",
+    "id": "evt_msdmec81023",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:08.586Z",
+    "ts": "2026-08-03T19:26:45.984Z",
     "seq": 24,
     "payload": {
       "kind": "advisory",
@@ -403,22 +403,22 @@
         "fixed_in": "9.0.5",
         "source": "fixture"
       },
-      "received_at": "2026-08-03T19:11:08.586Z"
+      "received_at": "2026-08-03T19:26:45.984Z"
     }
   },
   {
-    "id": "evt_msdlu8x7024",
+    "id": "evt_msdmec81024",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:09.986Z",
+    "ts": "2026-08-03T19:26:47.384Z",
     "seq": 25,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-2vx8-xjx9-wcxc",
+        "ghsa_id": "GHSA-2vp3-xjp4-wcp5",
         "cve_id": "CVE-2026-70000",
         "severity": "LOW",
         "cvss": 3.1,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@angular/core: prototype pollution via unsanitised merge",
         "in_kev": false,
         "ecosystem": "npm",
@@ -427,22 +427,22 @@
         "fixed_in": "1.0.1",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:09.986Z"
+      "received_at": "2026-08-03T19:26:47.384Z"
     }
   },
   {
-    "id": "evt_msdlu8x7025",
+    "id": "evt_msdmec81025",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:10.186Z",
+    "ts": "2026-08-03T19:26:47.584Z",
     "seq": 26,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-3vx8-2mx9-xcxc",
+        "ghsa_id": "GHSA-3vp3-2mp4-xcp5",
         "cve_id": "CVE-2026-70037",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@angular/router: regular expression denial of service in the parser",
         "in_kev": false,
         "ecosystem": "npm",
@@ -451,22 +451,22 @@
         "fixed_in": "2.1.2",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:10.186Z"
+      "received_at": "2026-08-03T19:26:47.584Z"
     }
   },
   {
-    "id": "evt_msdlu8x7026",
+    "id": "evt_msdmec81026",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:10.386Z",
+    "ts": "2026-08-03T19:26:47.784Z",
     "seq": 27,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-4vx8-3mx9-2fxc",
+        "ghsa_id": "GHSA-4vp3-3mp4-2fp5",
         "cve_id": "CVE-2026-70074",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@angular/forms: path traversal when extracting archives",
         "in_kev": false,
         "ecosystem": "npm",
@@ -475,22 +475,22 @@
         "fixed_in": "3.2.3",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:10.386Z"
+      "received_at": "2026-08-03T19:26:47.784Z"
     }
   },
   {
-    "id": "evt_msdlu8x7027",
+    "id": "evt_msdmec81027",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:10.586Z",
+    "ts": "2026-08-03T19:26:47.984Z",
     "seq": 28,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-5vx8-4mx9-3fxc",
+        "ghsa_id": "GHSA-5vp3-4mp4-3fp5",
         "cve_id": "CVE-2026-70111",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@angular/platform-browser: improper certificate validation on redirect",
         "in_kev": false,
         "ecosystem": "npm",
@@ -499,22 +499,22 @@
         "fixed_in": "4.3.4",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:10.586Z"
+      "received_at": "2026-08-03T19:26:47.984Z"
     }
   },
   {
-    "id": "evt_msdlu8x7028",
+    "id": "evt_msdmec81028",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:10.786Z",
+    "ts": "2026-08-03T19:26:48.184Z",
     "seq": 29,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-6vx8-5mx9-4fxc",
+        "ghsa_id": "GHSA-6vp3-5mp4-4fp5",
         "cve_id": "CVE-2026-70148",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "vue: uncontrolled resource consumption under nested input",
         "in_kev": false,
         "ecosystem": "npm",
@@ -523,22 +523,22 @@
         "fixed_in": "5.4.5",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:10.786Z"
+      "received_at": "2026-08-03T19:26:48.184Z"
     }
   },
   {
-    "id": "evt_msdlu8x7029",
+    "id": "evt_msdmec81029",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:10.986Z",
+    "ts": "2026-08-03T19:26:48.384Z",
     "seq": 30,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-7vx8-6mx9-5fxc",
+        "ghsa_id": "GHSA-7vp3-6mp4-5fp5",
         "cve_id": "CVE-2026-70185",
         "severity": "CRITICAL",
         "cvss": 9.8,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "vue-router: information exposure through error messages",
         "in_kev": false,
         "ecosystem": "npm",
@@ -547,22 +547,22 @@
         "fixed_in": "6.5.6",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:10.986Z"
+      "received_at": "2026-08-03T19:26:48.384Z"
     }
   },
   {
-    "id": "evt_msdlu8x702a",
+    "id": "evt_msdmec8102a",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:11.186Z",
+    "ts": "2026-08-03T19:26:48.584Z",
     "seq": 31,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-8vx8-7mx9-6fxc",
+        "ghsa_id": "GHSA-8vp3-7mp4-6fp5",
         "cve_id": "CVE-2026-70222",
         "severity": "LOW",
         "cvss": 3.1,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "pinia: incorrect authorization on the internal route",
         "in_kev": false,
         "ecosystem": "npm",
@@ -571,22 +571,22 @@
         "fixed_in": "7.6.7",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:11.186Z"
+      "received_at": "2026-08-03T19:26:48.584Z"
     }
   },
   {
-    "id": "evt_msdlu8x702b",
+    "id": "evt_msdmec8102b",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:11.386Z",
+    "ts": "2026-08-03T19:26:48.784Z",
     "seq": 32,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-9vx8-8mx9-7fxc",
+        "ghsa_id": "GHSA-9vp3-8mp4-7fp5",
         "cve_id": "CVE-2026-70259",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "nuxt: prototype pollution via unsanitised merge",
         "in_kev": false,
         "ecosystem": "npm",
@@ -595,22 +595,22 @@
         "fixed_in": "1.7.8",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:11.386Z"
+      "received_at": "2026-08-03T19:26:48.784Z"
     }
   },
   {
-    "id": "evt_msdlu8x702c",
+    "id": "evt_msdmec8102c",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:11.586Z",
+    "ts": "2026-08-03T19:26:48.984Z",
     "seq": 33,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-cvx8-9mx9-8fxc",
+        "ghsa_id": "GHSA-cvp3-9mp4-8fp5",
         "cve_id": "CVE-2026-70296",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "svelte: regular expression denial of service in the parser",
         "in_kev": false,
         "ecosystem": "npm",
@@ -619,22 +619,22 @@
         "fixed_in": "2.8.9",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:11.586Z"
+      "received_at": "2026-08-03T19:26:48.984Z"
     }
   },
   {
-    "id": "evt_msdlu8x702d",
+    "id": "evt_msdmec8102d",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:11.786Z",
+    "ts": "2026-08-03T19:26:49.184Z",
     "seq": 34,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-fvx8-cmx9-9fxc",
+        "ghsa_id": "GHSA-fvp3-cmp4-9fp5",
         "cve_id": "CVE-2026-70333",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@sveltejs/kit: path traversal when extracting archives",
         "in_kev": false,
         "ecosystem": "npm",
@@ -643,22 +643,22 @@
         "fixed_in": "3.9.1",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:11.786Z"
+      "received_at": "2026-08-03T19:26:49.184Z"
     }
   },
   {
-    "id": "evt_msdlu8x702e",
+    "id": "evt_msdmec8102e",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:11.986Z",
+    "ts": "2026-08-03T19:26:49.384Z",
     "seq": 35,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-gvx8-fmx9-cfxc",
+        "ghsa_id": "GHSA-gvp3-fmp4-cfp5",
         "cve_id": "CVE-2026-70370",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "electron: improper certificate validation on redirect",
         "in_kev": false,
         "ecosystem": "npm",
@@ -667,22 +667,22 @@
         "fixed_in": "4.10.2",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:11.986Z"
+      "received_at": "2026-08-03T19:26:49.384Z"
     }
   },
   {
-    "id": "evt_msdlu8x702f",
+    "id": "evt_msdmec8102f",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:12.186Z",
+    "ts": "2026-08-03T19:26:49.584Z",
     "seq": 36,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-hvx8-gmx9-ffxc",
+        "ghsa_id": "GHSA-hvp3-gmp4-ffp5",
         "cve_id": "CVE-2026-70407",
         "severity": "CRITICAL",
         "cvss": 9.8,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "electron-builder: uncontrolled resource consumption under nested input",
         "in_kev": false,
         "ecosystem": "npm",
@@ -691,22 +691,22 @@
         "fixed_in": "5.11.3",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:12.186Z"
+      "received_at": "2026-08-03T19:26:49.584Z"
     }
   },
   {
-    "id": "evt_msdlu8x702g",
+    "id": "evt_msdmec8102g",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:12.386Z",
+    "ts": "2026-08-03T19:26:49.784Z",
     "seq": 37,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-jvx8-hmx9-gfxc",
+        "ghsa_id": "GHSA-jvp3-hmp4-gfp5",
         "cve_id": "CVE-2026-70444",
         "severity": "LOW",
         "cvss": 3.1,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "gatsby: information exposure through error messages",
         "in_kev": false,
         "ecosystem": "npm",
@@ -715,22 +715,22 @@
         "fixed_in": "6.12.4",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:12.386Z"
+      "received_at": "2026-08-03T19:26:49.784Z"
     }
   },
   {
-    "id": "evt_msdlu8x702h",
+    "id": "evt_msdmec8102h",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:12.586Z",
+    "ts": "2026-08-03T19:26:49.984Z",
     "seq": 38,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-mvx8-jmx9-hfxc",
+        "ghsa_id": "GHSA-mvp3-jmp4-hfp5",
         "cve_id": "CVE-2026-70481",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@strapi/strapi: incorrect authorization on the internal route",
         "in_kev": false,
         "ecosystem": "npm",
@@ -739,22 +739,22 @@
         "fixed_in": "7.0.5",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:12.586Z"
+      "received_at": "2026-08-03T19:26:49.984Z"
     }
   },
   {
-    "id": "evt_msdlu8x702i",
+    "id": "evt_msdmec8202i",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:12.786Z",
+    "ts": "2026-08-03T19:26:50.184Z",
     "seq": 39,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-pvx8-mmx9-jfxc",
+        "ghsa_id": "GHSA-pvp3-mmp4-jfp5",
         "cve_id": "CVE-2026-70518",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@nestjs/core: prototype pollution via unsanitised merge",
         "in_kev": false,
         "ecosystem": "npm",
@@ -763,22 +763,22 @@
         "fixed_in": "1.1.6",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:12.786Z"
+      "received_at": "2026-08-03T19:26:50.184Z"
     }
   },
   {
-    "id": "evt_msdlu8x702j",
+    "id": "evt_msdmec8202j",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:12.986Z",
+    "ts": "2026-08-03T19:26:50.384Z",
     "seq": 40,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-qvx8-pmx9-mfxc",
+        "ghsa_id": "GHSA-qvp3-pmp4-mfp5",
         "cve_id": "CVE-2026-70555",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@nestjs/common: regular expression denial of service in the parser",
         "in_kev": false,
         "ecosystem": "npm",
@@ -787,22 +787,22 @@
         "fixed_in": "2.2.7",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:12.986Z"
+      "received_at": "2026-08-03T19:26:50.384Z"
     }
   },
   {
-    "id": "evt_msdlu8x702k",
+    "id": "evt_msdmec8202k",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:13.186Z",
+    "ts": "2026-08-03T19:26:50.584Z",
     "seq": 41,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-rvx8-qmx9-pfxc",
+        "ghsa_id": "GHSA-rvp3-qmp4-pfp5",
         "cve_id": "CVE-2026-70592",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "prisma: path traversal when extracting archives",
         "in_kev": false,
         "ecosystem": "npm",
@@ -811,22 +811,22 @@
         "fixed_in": "3.3.8",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:13.186Z"
+      "received_at": "2026-08-03T19:26:50.584Z"
     }
   },
   {
-    "id": "evt_msdlu8x702l",
+    "id": "evt_msdmec8202l",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:13.386Z",
+    "ts": "2026-08-03T19:26:50.784Z",
     "seq": 42,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-vvx8-rmx9-qfxc",
+        "ghsa_id": "GHSA-vvp3-rmp4-qfp5",
         "cve_id": "CVE-2026-70629",
         "severity": "CRITICAL",
         "cvss": 9.8,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "glob: improper certificate validation on redirect",
         "in_kev": false,
         "ecosystem": "npm",
@@ -835,22 +835,22 @@
         "fixed_in": "4.4.9",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:13.386Z"
+      "received_at": "2026-08-03T19:26:50.784Z"
     }
   },
   {
-    "id": "evt_msdlu8x702m",
+    "id": "evt_msdmec8202m",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:13.586Z",
+    "ts": "2026-08-03T19:26:50.984Z",
     "seq": 43,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-wvx8-vmx9-rfxc",
+        "ghsa_id": "GHSA-wvp3-vmp4-rfp5",
         "cve_id": "CVE-2026-70666",
         "severity": "LOW",
         "cvss": 3.1,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "sequelize: uncontrolled resource consumption under nested input",
         "in_kev": false,
         "ecosystem": "npm",
@@ -859,22 +859,22 @@
         "fixed_in": "5.5.1",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:13.586Z"
+      "received_at": "2026-08-03T19:26:50.984Z"
     }
   },
   {
-    "id": "evt_msdlu8x702n",
+    "id": "evt_msdmec8202n",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:13.786Z",
+    "ts": "2026-08-03T19:26:51.184Z",
     "seq": 44,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-xvx8-wmx9-vfxc",
+        "ghsa_id": "GHSA-xvp3-wmp4-vfp5",
         "cve_id": "CVE-2026-70703",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "typeorm: information exposure through error messages",
         "in_kev": false,
         "ecosystem": "npm",
@@ -883,22 +883,22 @@
         "fixed_in": "6.6.2",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:13.786Z"
+      "received_at": "2026-08-03T19:26:51.184Z"
     }
   },
   {
-    "id": "evt_msdlu8x702o",
+    "id": "evt_msdmec8202o",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:13.986Z",
+    "ts": "2026-08-03T19:26:51.384Z",
     "seq": 45,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-2wx8-xmx9-wfxc",
+        "ghsa_id": "GHSA-2wp3-xmp4-wfp5",
         "cve_id": "CVE-2026-70740",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "mongoose: incorrect authorization on the internal route",
         "in_kev": false,
         "ecosystem": "npm",
@@ -907,22 +907,22 @@
         "fixed_in": "7.7.3",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:13.986Z"
+      "received_at": "2026-08-03T19:26:51.384Z"
     }
   },
   {
-    "id": "evt_msdlu8x702p",
+    "id": "evt_msdmec8202p",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:14.186Z",
+    "ts": "2026-08-03T19:26:51.584Z",
     "seq": 46,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-3wx8-2px9-xfxc",
+        "ghsa_id": "GHSA-3wp3-2pp4-xfp5",
         "cve_id": "CVE-2026-70777",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "knex: prototype pollution via unsanitised merge",
         "in_kev": false,
         "ecosystem": "npm",
@@ -931,22 +931,22 @@
         "fixed_in": "1.8.4",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:14.186Z"
+      "received_at": "2026-08-03T19:26:51.584Z"
     }
   },
   {
-    "id": "evt_msdlu8x702q",
+    "id": "evt_msdmec8202q",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:14.386Z",
+    "ts": "2026-08-03T19:26:51.784Z",
     "seq": 47,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-4wx8-3px9-2gxc",
+        "ghsa_id": "GHSA-4wp3-3pp4-2gp5",
         "cve_id": "CVE-2026-70814",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "puppeteer: regular expression denial of service in the parser",
         "in_kev": false,
         "ecosystem": "npm",
@@ -955,22 +955,22 @@
         "fixed_in": "2.9.5",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:14.386Z"
+      "received_at": "2026-08-03T19:26:51.784Z"
     }
   },
   {
-    "id": "evt_msdlu8x702r",
+    "id": "evt_msdmec8202r",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:14.586Z",
+    "ts": "2026-08-03T19:26:51.984Z",
     "seq": 48,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-5wx8-4px9-3gxc",
+        "ghsa_id": "GHSA-5wp3-4pp4-3gp5",
         "cve_id": "CVE-2026-70851",
         "severity": "CRITICAL",
         "cvss": 9.8,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "playwright: path traversal when extracting archives",
         "in_kev": false,
         "ecosystem": "npm",
@@ -979,22 +979,22 @@
         "fixed_in": "3.10.6",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:14.586Z"
+      "received_at": "2026-08-03T19:26:51.984Z"
     }
   },
   {
-    "id": "evt_msdlu8x702s",
+    "id": "evt_msdmec8202s",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:14.786Z",
+    "ts": "2026-08-03T19:26:52.184Z",
     "seq": 49,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-6wx8-5px9-4gxc",
+        "ghsa_id": "GHSA-6wp3-5pp4-4gp5",
         "cve_id": "CVE-2026-70888",
         "severity": "LOW",
         "cvss": 3.1,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "cypress: improper certificate validation on redirect",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1003,22 +1003,22 @@
         "fixed_in": "4.11.7",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:14.786Z"
+      "received_at": "2026-08-03T19:26:52.184Z"
     }
   },
   {
-    "id": "evt_msdlu8x702t",
+    "id": "evt_msdmec8202t",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:14.986Z",
+    "ts": "2026-08-03T19:26:52.384Z",
     "seq": 50,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-7wx8-6px9-5gxc",
+        "ghsa_id": "GHSA-7wp3-6pp4-5gp5",
         "cve_id": "CVE-2026-70925",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@storybook/react: uncontrolled resource consumption under nested input",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1027,22 +1027,22 @@
         "fixed_in": "5.12.8",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:14.986Z"
+      "received_at": "2026-08-03T19:26:52.384Z"
     }
   },
   {
-    "id": "evt_msdlu8x702u",
+    "id": "evt_msdmec8202u",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:15.186Z",
+    "ts": "2026-08-03T19:26:52.584Z",
     "seq": 51,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-8wx8-7px9-6gxc",
+        "ghsa_id": "GHSA-8wp3-7pp4-6gp5",
         "cve_id": "CVE-2026-70962",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@ionic/angular: information exposure through error messages",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1051,22 +1051,22 @@
         "fixed_in": "6.0.9",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:15.186Z"
+      "received_at": "2026-08-03T19:26:52.584Z"
     }
   },
   {
-    "id": "evt_msdlu8x802v",
+    "id": "evt_msdmec8202v",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:15.386Z",
+    "ts": "2026-08-03T19:26:52.784Z",
     "seq": 52,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-9wx8-8px9-7gxc",
+        "ghsa_id": "GHSA-9wp3-8pp4-7gp5",
         "cve_id": "CVE-2026-70999",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "parse-server: incorrect authorization on the internal route",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1075,22 +1075,22 @@
         "fixed_in": "7.1.1",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:15.386Z"
+      "received_at": "2026-08-03T19:26:52.784Z"
     }
   },
   {
-    "id": "evt_msdlu8x802w",
+    "id": "evt_msdmec8202w",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:15.586Z",
+    "ts": "2026-08-03T19:26:52.984Z",
     "seq": 53,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-cwx8-9px9-8gxc",
+        "ghsa_id": "GHSA-cwp3-9pp4-8gp5",
         "cve_id": "CVE-2026-71036",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "sails: prototype pollution via unsanitised merge",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1099,22 +1099,22 @@
         "fixed_in": "1.2.2",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:15.586Z"
+      "received_at": "2026-08-03T19:26:52.984Z"
     }
   },
   {
-    "id": "evt_msdlu8x802x",
+    "id": "evt_msdmec8202x",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:15.786Z",
+    "ts": "2026-08-03T19:26:53.184Z",
     "seq": 54,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-fwx8-cpx9-9gxc",
+        "ghsa_id": "GHSA-fwp3-cpp4-9gp5",
         "cve_id": "CVE-2026-71073",
         "severity": "CRITICAL",
         "cvss": 9.8,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@feathersjs/feathers: regular expression denial of service in the parser",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1123,22 +1123,22 @@
         "fixed_in": "2.3.3",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:15.786Z"
+      "received_at": "2026-08-03T19:26:53.184Z"
     }
   },
   {
-    "id": "evt_msdlu8x802y",
+    "id": "evt_msdmec8202y",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:15.986Z",
+    "ts": "2026-08-03T19:26:53.384Z",
     "seq": 55,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-gwx8-fpx9-cgxc",
+        "ghsa_id": "GHSA-gwp3-fpp4-cgp5",
         "cve_id": "CVE-2026-71110",
         "severity": "LOW",
         "cvss": 3.1,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@loopback/core: path traversal when extracting archives",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1147,22 +1147,22 @@
         "fixed_in": "3.4.4",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:15.986Z"
+      "received_at": "2026-08-03T19:26:53.384Z"
     }
   },
   {
-    "id": "evt_msdlu8x802z",
+    "id": "evt_msdmec8202z",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:16.186Z",
+    "ts": "2026-08-03T19:26:53.584Z",
     "seq": 56,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-hwx8-gpx9-fgxc",
+        "ghsa_id": "GHSA-hwp3-gpp4-fgp5",
         "cve_id": "CVE-2026-71147",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@adonisjs/core: improper certificate validation on redirect",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1171,22 +1171,22 @@
         "fixed_in": "4.5.5",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:16.186Z"
+      "received_at": "2026-08-03T19:26:53.584Z"
     }
   },
   {
-    "id": "evt_msdlu8x8030",
+    "id": "evt_msdmec82030",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:16.386Z",
+    "ts": "2026-08-03T19:26:53.784Z",
     "seq": 57,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-jwx8-hpx9-ggxc",
+        "ghsa_id": "GHSA-jwp3-hpp4-ggp5",
         "cve_id": "CVE-2026-71184",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "@redwoodjs/router: uncontrolled resource consumption under nested input",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1195,22 +1195,22 @@
         "fixed_in": "5.6.6",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:16.386Z"
+      "received_at": "2026-08-03T19:26:53.784Z"
     }
   },
   {
-    "id": "evt_msdlu8x8031",
+    "id": "evt_msdmec82031",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:16.586Z",
+    "ts": "2026-08-03T19:26:53.984Z",
     "seq": 58,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-mwx8-jpx9-hgxc",
+        "ghsa_id": "GHSA-mwp3-jpp4-hgp5",
         "cve_id": "CVE-2026-71221",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "express: information exposure through error messages",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1219,22 +1219,22 @@
         "fixed_in": "6.7.7",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:16.586Z"
+      "received_at": "2026-08-03T19:26:53.984Z"
     }
   },
   {
-    "id": "evt_msdlu8x8032",
+    "id": "evt_msdmec82032",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:16.786Z",
+    "ts": "2026-08-03T19:26:54.184Z",
     "seq": 59,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-pwx8-mpx9-jgxc",
+        "ghsa_id": "GHSA-pwp3-mpp4-jgp5",
         "cve_id": "CVE-2026-71258",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "backbone: incorrect authorization on the internal route",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1243,22 +1243,22 @@
         "fixed_in": "7.8.8",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:16.786Z"
+      "received_at": "2026-08-03T19:26:54.184Z"
     }
   },
   {
-    "id": "evt_msdlu8x8033",
+    "id": "evt_msdmec82033",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:16.986Z",
+    "ts": "2026-08-03T19:26:54.384Z",
     "seq": 60,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-qwx8-ppx9-mgxc",
+        "ghsa_id": "GHSA-qwp3-ppp4-mgp5",
         "cve_id": "CVE-2026-71295",
         "severity": "CRITICAL",
         "cvss": 9.8,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "preact: prototype pollution via unsanitised merge",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1267,22 +1267,22 @@
         "fixed_in": "1.9.9",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:16.986Z"
+      "received_at": "2026-08-03T19:26:54.384Z"
     }
   },
   {
-    "id": "evt_msdlu8x8034",
+    "id": "evt_msdmec82034",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:17.186Z",
+    "ts": "2026-08-03T19:26:54.584Z",
     "seq": 61,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-rwx8-qpx9-pgxc",
+        "ghsa_id": "GHSA-rwp3-qpp4-pgp5",
         "cve_id": "CVE-2026-71332",
         "severity": "LOW",
         "cvss": 3.1,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "lit: regular expression denial of service in the parser",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1291,22 +1291,22 @@
         "fixed_in": "2.10.1",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:17.186Z"
+      "received_at": "2026-08-03T19:26:54.584Z"
     }
   },
   {
-    "id": "evt_msdlu8x8035",
+    "id": "evt_msdmec82035",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:17.386Z",
+    "ts": "2026-08-03T19:26:54.784Z",
     "seq": 62,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-vwx8-rpx9-qgxc",
+        "ghsa_id": "GHSA-vwp3-rpp4-qgp5",
         "cve_id": "CVE-2026-71369",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "solid-js: path traversal when extracting archives",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1315,22 +1315,22 @@
         "fixed_in": "3.11.2",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:17.386Z"
+      "received_at": "2026-08-03T19:26:54.784Z"
     }
   },
   {
-    "id": "evt_msdlu8x8036",
+    "id": "evt_msdmec82036",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:17.586Z",
+    "ts": "2026-08-03T19:26:54.984Z",
     "seq": 63,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-wwx8-vpx9-rgxc",
+        "ghsa_id": "GHSA-wwp3-vpp4-rgp5",
         "cve_id": "CVE-2026-71406",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "koa: improper certificate validation on redirect",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1339,22 +1339,22 @@
         "fixed_in": "4.12.3",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:17.586Z"
+      "received_at": "2026-08-03T19:26:54.984Z"
     }
   },
   {
-    "id": "evt_msdlu8x8037",
+    "id": "evt_msdmec82037",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:17.786Z",
+    "ts": "2026-08-03T19:26:55.184Z",
     "seq": 64,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-xwx8-wpx9-vgxc",
+        "ghsa_id": "GHSA-xwp3-wpp4-vgp5",
         "cve_id": "CVE-2026-71443",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "fastify: uncontrolled resource consumption under nested input",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1363,22 +1363,22 @@
         "fixed_in": "5.0.4",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:17.786Z"
+      "received_at": "2026-08-03T19:26:55.184Z"
     }
   },
   {
-    "id": "evt_msdlu8x8038",
+    "id": "evt_msdmec82038",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:17.986Z",
+    "ts": "2026-08-03T19:26:55.384Z",
     "seq": 65,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-2xx8-xpx9-wgxc",
+        "ghsa_id": "GHSA-2xp3-xpp4-wgp5",
         "cve_id": "CVE-2026-71480",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "socket.io: information exposure through error messages",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1387,22 +1387,22 @@
         "fixed_in": "6.1.5",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:17.986Z"
+      "received_at": "2026-08-03T19:26:55.384Z"
     }
   },
   {
-    "id": "evt_msdlu8x8039",
+    "id": "evt_msdmec82039",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:18.186Z",
+    "ts": "2026-08-03T19:26:55.584Z",
     "seq": 66,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-3xx8-2qx9-xgxc",
+        "ghsa_id": "GHSA-3xp3-2qp4-xgp5",
         "cve_id": "CVE-2026-71517",
         "severity": "CRITICAL",
         "cvss": 9.8,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "ioredis: incorrect authorization on the internal route",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1411,22 +1411,22 @@
         "fixed_in": "7.2.6",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:18.186Z"
+      "received_at": "2026-08-03T19:26:55.584Z"
     }
   },
   {
-    "id": "evt_msdlu8x803a",
+    "id": "evt_msdmec8203a",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:18.386Z",
+    "ts": "2026-08-03T19:26:55.784Z",
     "seq": 67,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-4xx8-3qx9-2hxc",
+        "ghsa_id": "GHSA-4xp3-3qp4-2hp5",
         "cve_id": "CVE-2026-71554",
         "severity": "LOW",
         "cvss": 3.1,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "bullmq: prototype pollution via unsanitised merge",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1435,22 +1435,22 @@
         "fixed_in": "1.3.7",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:18.386Z"
+      "received_at": "2026-08-03T19:26:55.784Z"
     }
   },
   {
-    "id": "evt_msdlu8x803b",
+    "id": "evt_msdmec8203b",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:18.586Z",
+    "ts": "2026-08-03T19:26:55.984Z",
     "seq": 68,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-5xx8-4qx9-3hxc",
+        "ghsa_id": "GHSA-5xp3-4qp4-3hp5",
         "cve_id": "CVE-2026-71591",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "nodemailer: regular expression denial of service in the parser",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1459,22 +1459,22 @@
         "fixed_in": "2.4.8",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:18.586Z"
+      "received_at": "2026-08-03T19:26:55.984Z"
     }
   },
   {
-    "id": "evt_msdlu8x803c",
+    "id": "evt_msdmec8203c",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:18.786Z",
+    "ts": "2026-08-03T19:26:56.184Z",
     "seq": 69,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-6xx8-5qx9-4hxc",
+        "ghsa_id": "GHSA-6xp3-5qp4-4hp5",
         "cve_id": "CVE-2026-71628",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "passport: path traversal when extracting archives",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1483,22 +1483,22 @@
         "fixed_in": "3.5.9",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:18.786Z"
+      "received_at": "2026-08-03T19:26:56.184Z"
     }
   },
   {
-    "id": "evt_msdlu8x803d",
+    "id": "evt_msdmec8203d",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:18.986Z",
+    "ts": "2026-08-03T19:26:56.384Z",
     "seq": 70,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-7xx8-6qx9-5hxc",
+        "ghsa_id": "GHSA-7xp3-6qp4-5hp5",
         "cve_id": "CVE-2026-71665",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "stripe: improper certificate validation on redirect",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1507,22 +1507,22 @@
         "fixed_in": "4.6.1",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:18.986Z"
+      "received_at": "2026-08-03T19:26:56.384Z"
     }
   },
   {
-    "id": "evt_msdlu8x803e",
+    "id": "evt_msdmec8203e",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:19.186Z",
+    "ts": "2026-08-03T19:26:56.584Z",
     "seq": 71,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-8xx8-7qx9-6hxc",
+        "ghsa_id": "GHSA-8xp3-7qp4-6hp5",
         "cve_id": "CVE-2026-71702",
         "severity": "HIGH",
         "cvss": 7.5,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "firebase-admin: uncontrolled resource consumption under nested input",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1531,22 +1531,22 @@
         "fixed_in": "5.7.2",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:19.186Z"
+      "received_at": "2026-08-03T19:26:56.584Z"
     }
   },
   {
-    "id": "evt_msdlu8x803f",
+    "id": "evt_msdmec8203f",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:19.386Z",
+    "ts": "2026-08-03T19:26:56.784Z",
     "seq": 72,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-9xx8-8qx9-7hxc",
+        "ghsa_id": "GHSA-9xp3-8qp4-7hp5",
         "cve_id": "CVE-2026-71739",
         "severity": "CRITICAL",
         "cvss": 9.8,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "three: information exposure through error messages",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1555,22 +1555,22 @@
         "fixed_in": "6.8.3",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:19.386Z"
+      "received_at": "2026-08-03T19:26:56.784Z"
     }
   },
   {
-    "id": "evt_msdlu8x803g",
+    "id": "evt_msdmec8203g",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:19.586Z",
+    "ts": "2026-08-03T19:26:56.984Z",
     "seq": 73,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-cxx8-9qx9-8hxc",
+        "ghsa_id": "GHSA-cxp3-9qp4-8hp5",
         "cve_id": "CVE-2026-71776",
         "severity": "LOW",
         "cvss": 3.1,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "d3: incorrect authorization on the internal route",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1579,22 +1579,22 @@
         "fixed_in": "7.9.4",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:19.586Z"
+      "received_at": "2026-08-03T19:26:56.984Z"
     }
   },
   {
-    "id": "evt_msdlu8x803h",
+    "id": "evt_msdmec8203h",
     "topic": "advisories",
-    "ts": "2026-08-03T19:11:19.786Z",
+    "ts": "2026-08-03T19:26:57.184Z",
     "seq": 74,
     "payload": {
       "kind": "advisory",
       "advisory": {
-        "ghsa_id": "GHSA-fxx8-cqx9-9hxc",
+        "ghsa_id": "GHSA-fxp3-cqp4-9hp5",
         "cve_id": "CVE-2026-71813",
         "severity": "MODERATE",
         "cvss": 5.3,
-        "published_at": "2026-08-03T19:10:58.987Z",
+        "published_at": "2026-08-03T19:26:36.385Z",
         "summary": "chart.js: prototype pollution via unsanitised merge",
         "in_kev": false,
         "ecosystem": "npm",
@@ -1603,7 +1603,7 @@
         "fixed_in": "1.10.5",
         "source": "synthetic"
       },
-      "received_at": "2026-08-03T19:11:19.786Z"
+      "received_at": "2026-08-03T19:26:57.184Z"
     }
   }
 ]

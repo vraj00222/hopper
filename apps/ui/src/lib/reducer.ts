@@ -6,12 +6,18 @@
 import { DEFAULT_APPROVER } from '@hopper/contracts';
 import type {
   ActionReceipt,
+  Advisory,
+  AdvisoryClass,
+  AgentRunResult,
   AppState,
   ApprovalRequest,
   ClockTick,
   FeedItem,
+  FocusView,
+  PipelineRun,
   ServerMessage,
 } from '@hopper/contracts';
+import { deepUnwrap } from './normalize.js';
 import type { HopWave, Selection, UiState } from './types.js';
 
 export function initialUi(app: AppState): UiState {
@@ -88,7 +94,140 @@ function advanceWave(prev: HopWave | null, msg: Extract<ServerMessage, { type: '
   };
 }
 
-export function reduce(ui: UiState, msg: ServerMessage): UiState {
+// ─── agent data that only ever arrives inside a PipelineRun ─────────────────
+//
+// A live server pushes no `focus` and no `agent` frames while a beat runs — the
+// whole agent payload rides on `run.agent_result`, and the flattened verdicts
+// only appear in the `state` snapshot sent at connect time. So the AGENTS panel
+// has to be fed from three places: the connect snapshot, any `focus` push, and
+// the run. Otherwise it sits empty through the entire arc, or through any
+// mid-demo page refresh.
+
+function rowsFromAgentResult(ar: AgentRunResult): FocusView['verdicts'] {
+  const out: FocusView['verdicts'] = {};
+
+  const r = ar.reachability;
+  if (r) {
+    out.reachability = {
+      verdict: r.reachable ? 'REACHABLE' : 'NOT REACHABLE',
+      confidence: r.confidence,
+      detail: r.rationale,
+    };
+  }
+
+  const a = ar.arbiter;
+  const between = a?.conflict_between ?? [];
+  const dissent =
+    (ar.conflict === true || a?.conflict === true) &&
+    (between.length === 0 || between.includes('patch-engineer'));
+
+  const p = ar.patch;
+  if (p) {
+    out.patch = {
+      verdict: dissent ? 'CONFLICT' : p.safe_bump ? `BUMP ${p.target ?? ''}`.trim() : 'HOLD',
+      confidence: p.confidence,
+      detail: p.rationale,
+      conflict: dissent,
+    };
+  }
+
+  const o = ar.obligation;
+  if (o) {
+    const c = o.clauses?.[0];
+    out.obligation = {
+      verdict: o.obligated && c ? `${c.clause_ref} · ${c.hours}h` : 'NO CLAUSE',
+      confidence: o.confidence,
+      detail: o.rationale,
+    };
+  }
+
+  if (a) {
+    out.arbiter = {
+      verdict: a.decision === 'human' ? '→ HUMAN' : a.decision === 'suppress' ? 'SUPPRESS' : '→ AUTO',
+      confidence: a.confidence,
+      detail: a.rationale,
+    };
+  }
+
+  return out;
+}
+
+function classFromId(id: string): AdvisoryClass {
+  const [ecosystem, severity_band, depth_band] = String(id).split('/');
+  return {
+    id: String(id),
+    ecosystem: (ecosystem || 'npm') as AdvisoryClass['ecosystem'],
+    severity_band: (severity_band || 'moderate') as AdvisoryClass['severity_band'],
+    depth_band: (depth_band || 'none') as AdvisoryClass['depth_band'],
+  };
+}
+
+/** the most an Advisory can honestly be reconstructed from a FeedItem */
+function advisoryFromFeed(item: FeedItem | undefined, ghsa_id: string): Advisory {
+  return {
+    ghsa_id,
+    cve_id: item?.cve_id ?? null,
+    severity: item?.severity ?? 'MODERATE',
+    cvss: Number.NaN, // unknown here — every renderer skips a non-finite cvss
+    published_at: item?.published_at ?? new Date().toISOString(),
+    summary: item?.summary ?? '',
+    in_kev: item?.in_kev ?? false,
+    ecosystem: 'npm',
+    package_name: item?.package ?? '',
+    vulnerable_range: '',
+    fixed_in: null,
+  };
+}
+
+export function mergeRunIntoFocus(
+  focus: FocusView | null,
+  run: PipelineRun,
+  feed: FeedItem[],
+): FocusView {
+  const same = focus !== null && focus.advisory.ghsa_id === run.ghsa_id;
+  const base: FocusView = same
+    ? focus
+    : {
+        advisory: advisoryFromFeed(
+          feed.find((f) => f.ghsa_id === run.ghsa_id),
+          run.ghsa_id,
+        ),
+        advisory_class: classFromId(run.advisory_class),
+        hop_paths: [],
+        absence: null,
+        precedents: [],
+        oncall: [],
+        transcript: [],
+        verdicts: {},
+        clocks: [],
+        approvals: [],
+        receipts: [],
+        run: null,
+        audit: [],
+      };
+
+  const ar = run.agent_result;
+  const rows = ar ? rowsFromAgentResult(ar) : {};
+  const busFromRun = ar?.transcript ?? [];
+
+  return {
+    ...base,
+    hop_paths: base.hop_paths.length > 0 ? base.hop_paths : run.hop_paths ?? [],
+    verdicts: { ...base.verdicts, ...rows },
+    transcript: busFromRun.length > base.transcript.length ? busFromRun : base.transcript,
+    approvals: (ar?.approvals ?? []).reduce(upsertApproval, base.approvals),
+    receipts: (run.receipts ?? []).reduce(addReceipt, base.receipts),
+    run,
+  };
+}
+
+export function reduce(ui: UiState, raw: ServerMessage): UiState {
+  // graph rows arrive as {id, labels, properties} envelopes on some server
+  // paths; unwrap before anything downstream reads a field off them
+  const msg =
+    raw.type === 'state' || raw.type === 'focus' || raw.type === 'run'
+      ? deepUnwrap(raw)
+      : raw;
   const app = ui.app;
   const focus = app.focus;
 
@@ -146,11 +285,15 @@ export function reduce(ui: UiState, msg: ServerMessage): UiState {
       const i = app.runs.findIndex((r) => r.run_id === msg.run.run_id);
       const runs = i === -1 ? [msg.run, ...app.runs] : app.runs.slice();
       if (i !== -1) runs[i] = msg.run;
-      const nextFocus =
-        focus && focus.advisory.ghsa_id === msg.run.ghsa_id
-          ? { ...focus, run: msg.run }
-          : focus;
-      return { ...ui, app: { ...app, runs, focus: nextFocus } };
+
+      const nextFocus = mergeRunIntoFocus(focus, msg.run, app.feed);
+      const receipts = (msg.run.receipts ?? []).reduce(addReceipt, app.receipts);
+      const approvals = (msg.run.agent_result?.approvals ?? []).reduce(
+        upsertApproval,
+        app.approvals,
+      );
+
+      return { ...ui, app: { ...app, runs, receipts, approvals, focus: nextFocus } };
     }
 
     case 'pipeline': {
@@ -195,7 +338,111 @@ export function isBlocked(ui: UiState, id: string): boolean {
 }
 
 export function receiptFor(ui: UiState, action: string): ActionReceipt | null {
-  return ui.app.receipts.find((r) => r.action === action) ?? null;
+  return ui.app.receipts.find((r) => r.action === action && r.ok) ?? null;
+}
+
+/**
+ * A receipt with `ok === false` is a record that something did NOT happen. The
+ * live server emits exactly that for the blocked customer notice — rendering it
+ * with a checkmark says the opposite of the truth and destroys the beat.
+ *
+ * When the failed action still has a pending approval, the failure and the gate
+ * are the same fact, so it is told once: as the gate.
+ */
+export function splitReceipts(
+  receipts: ActionReceipt[],
+  approvals: ApprovalRequest[],
+): { executed: ActionReceipt[]; held: ActionReceipt[] } {
+  const gated = new Set(
+    approvals.filter((a) => a.status === 'pending').map((a) => a.action as string),
+  );
+  const executed: ActionReceipt[] = [];
+  const held: ActionReceipt[] = [];
+  for (const r of receipts) {
+    if (r.ok) executed.push(r);
+    else if (!gated.has(r.action)) held.push(r);
+  }
+  return { executed, held };
+}
+
+/**
+ * The hop count comes off the contract — `HopPath.hops`, or the FeedItem the
+ * server built from it. It is never derived from chain length: a real chain
+ * carries repo, service, customer and clause nodes on top of the dependency
+ * edges, so `chain.length` and `hops` legitimately disagree (10 vs 6).
+ */
+/**
+ * The trace to draw.
+ *
+ * A live arc usually completes before anyone opens the browser, and presenters
+ * refresh mid-demo, so there is often no `hop` stream to animate. In that case
+ * the trace is reconstructed at rest from the contract — the chain that was
+ * walked, already arrived — rather than leaving the signature element blank.
+ */
+export function traceWave(ui: UiState): HopWave | null {
+  const focus = ui.app.focus;
+  const live = ui.wave;
+  if (live && (!focus?.advisory || live.ghsa_id === focus.advisory.ghsa_id)) return live;
+  if (!focus?.advisory) return live;
+
+  const chain = focus.hop_paths?.[0]?.chain;
+  if (chain && chain.length > 0) {
+    return {
+      ghsa_id: focus.advisory.ghsa_id,
+      total: chain.length,
+      chain: chain.slice(),
+      arrived: chain.length,
+      suppressed: false,
+      terminal: true,
+      nonce: 0,
+    };
+  }
+
+  const absence = focus.absence;
+  if (absence && absence.paths === 0) {
+    return {
+      ghsa_id: focus.advisory.ghsa_id,
+      total: 2,
+      chain: [absence.package, '∅'],
+      arrived: 2,
+      suppressed: true,
+      terminal: false,
+      nonce: 0,
+    };
+  }
+  return live;
+}
+
+/** the pipeline the graph picked, from a `pipeline` push or the latest run */
+export function currentSelection(ui: UiState): Selection | null {
+  if (ui.selection) return ui.selection;
+  const run = ui.app.runs[0];
+  if (!run) return null;
+  const spec = ui.app.pipelines.find((p) => p.pipeline_id === run.pipeline_id);
+  return {
+    pipeline_id: run.pipeline_id,
+    name: spec?.name ?? run.pipeline_id,
+    success_rate: spec?.success_rate ?? 0,
+    avg_latency: spec?.avg_latency ?? run.latency_ms,
+    advisory_class: run.advisory_class,
+    reason: run.selection_reason,
+  };
+}
+
+export function hopCountFor(ui: UiState, ghsaId?: string): number | null {
+  const focus = ui.app.focus;
+  const id = ghsaId ?? ui.wave?.ghsa_id ?? focus?.advisory?.ghsa_id;
+  if (!id) return null;
+
+  if (focus && focus.advisory?.ghsa_id === id) {
+    const path = focus.hop_paths?.[0];
+    if (path && Number.isFinite(path.hops)) return path.hops;
+    if (focus.absence && focus.absence.paths === 0) return 0;
+  }
+
+  const item = ui.app.feed.find((f) => f.ghsa_id === id);
+  if (item && Number.isFinite(item.hops)) return item.hops;
+  return null;
 }
 
 const APPROVAL_COPY: Record<string, { ref: string; detail: string }> = {
