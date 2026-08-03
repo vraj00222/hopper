@@ -39,6 +39,7 @@ import type { AffectsEdge, ClauseSeed, Dataset, DepEdge, Edge2, UsesEdge } from 
 import { toPackageNode } from './dataset.js';
 import {
   clampDepth,
+  compareChains,
   decisionEntry,
   observationEntry,
   patchEntry,
@@ -213,31 +214,31 @@ export class MemoryGraph implements GraphPort {
 
   // ─── traversal ────────────────────────────────────────────────────────────
 
-  /** BFS from `root` over DEPENDS_ON; returns the shortest node path to `target` */
+  /**
+   * Layered BFS from `root` over DEPENDS_ON returning the SHORTEST node path to
+   * `target`, and among equal-length paths the lexicographically smallest —
+   * the same route FalkorDB's shapeHopPaths tie-break settles on. All candidate
+   * chains in a layer share a length, so comparing `chain_v + [w]` reduces to
+   * comparing `chain_v`; keeping the best chain per node per layer is enough.
+   */
   private shortestChain(root: string, target: string, maxDepth: number): string[] | null {
     if (root === target) return [root];
-    const prev = new Map<string, string | null>([[root, null]]);
-    const depth = new Map<string, number>([[root, 0]]);
-    const queue = [root];
-    for (let head = 0; head < queue.length; head += 1) {
-      const cur = queue[head];
-      const d = depth.get(cur) ?? 0;
-      if (d >= maxDepth) continue;
-      for (const nxt of this.adj.get(cur) ?? []) {
-        if (prev.has(nxt)) continue;
-        prev.set(nxt, cur);
-        depth.set(nxt, d + 1);
-        if (nxt === target) {
-          const chain: string[] = [];
-          let c: string | null = nxt;
-          while (c !== null && c !== undefined) {
-            chain.unshift(c);
-            c = prev.get(c) ?? null;
-          }
-          return chain;
+    let frontier = new Map<string, string[]>([[root, [root]]]);
+    const settled = new Set<string>([root]);
+    for (let d = 0; d < maxDepth; d += 1) {
+      const next = new Map<string, string[]>();
+      for (const [node, chain] of frontier) {
+        for (const nxt of this.adj.get(node) ?? []) {
+          if (settled.has(nxt)) continue;
+          const prev = next.get(nxt);
+          if (!prev || compareChains(chain, prev.slice(0, -1)) < 0) next.set(nxt, [...chain, nxt]);
         }
-        queue.push(nxt);
       }
+      const hit = next.get(target);
+      if (hit) return hit;
+      if (next.size === 0) return null;
+      for (const k of next.keys()) settled.add(k);
+      frontier = next;
     }
     return null;
   }
