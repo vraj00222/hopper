@@ -155,6 +155,7 @@ p {
 /* grid children default to min-width:auto, which lets a wide code block or a
    long mono string set the column width. Every grid on this page opts out. */
 .hero__grid > *,
+.hero__panels > *,
 .record > *,
 .chan > *,
 .layer > *,
@@ -162,7 +163,8 @@ p {
 .trow > *,
 .plan > *,
 .stat > *,
-.out > * {
+.out > *,
+.obl__ledger > * {
   min-width: 0;
 }
 
@@ -192,6 +194,7 @@ p {
   display: flex;
   align-items: baseline;
   gap: 12px;
+  letter-spacing: 0.18em;
 }
 
 .head__eyebrow::after {
@@ -476,14 +479,93 @@ p {
   background: var(--c-signal);
 }
 
-/* No pulse here. The page runs exactly one orchestrated sequence — the
-   traversal — and a second, looping animation would only dilute it. */
+/* The page runs exactly one orchestrated sequence — the traversal — so the
+   only thing permitted to loop is the readout of a wave that is still moving,
+   and it stops the instant that wave resolves. */
+
+.hero__panels {
+  display: grid;
+  gap: 22px;
+  align-content: start;
+}
+
+.hero__aside {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--quiet);
+}
+
+.hero__aside b {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--fg);
+}
+
+/* ── status readout ───────────────────────────────────────────────────────── */
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+  transition: color 500ms ease;
+  white-space: nowrap;
+}
+
+.status__dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+  transition: background 500ms ease;
+}
+
+.status--live {
+  color: var(--c-signal);
+}
+
+.status--live .status__dot {
+  animation: probe 900ms ease-in-out infinite;
+}
+
+.status--breach {
+  color: var(--c-breach);
+}
+
+.status--clear {
+  color: var(--c-clear);
+}
+
+@keyframes probe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
 
 /* ── panel: the instrument face ───────────────────────────────────────────── */
 
 .panel {
   border: 1px solid var(--line);
   background: var(--panel);
+  transition: border-color 500ms ease;
+}
+
+/* A closed trace is not a row that went green — the whole instrument stands
+   down, frame included. */
+.panel--clear,
+.panel--clear .panel__bar {
+  border-color: color-mix(in srgb, var(--c-clear) 46%, transparent);
 }
 
 .panel__bar {
@@ -494,22 +576,11 @@ p {
   padding: 11px 14px;
   border-bottom: 1px solid var(--line);
   background: var(--panel-2);
+  transition: border-color 500ms ease;
 }
 
 .panel__bar .lbl {
   color: var(--quiet);
-}
-
-.panel__sub {
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--line);
-  border-top: 1px solid var(--line);
-  background: color-mix(in srgb, var(--c-bone) 2%, transparent);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
 }
 
 /* ── hop rows ─────────────────────────────────────────────────────────────── */
@@ -669,9 +740,23 @@ p {
   background: var(--c-clear);
 }
 
+/* A terminated wave gets a ring, not a dot. Nothing was delivered here. */
 .hop.is-stop .hop__mark {
-  background: var(--c-clear);
+  background: transparent;
   border-color: var(--c-clear);
+}
+
+/* Once a trace closes, its whole trail takes the colour of the verdict —
+   the wave is not half-alive behind the point where it stopped. */
+.panel--clear .hop.is-passed .hop__mark {
+  background: color-mix(in srgb, var(--c-clear) 88%, transparent);
+  border-color: color-mix(in srgb, var(--c-clear) 88%, transparent);
+}
+
+.panel--clear .hop.is-passed .hop__node::before,
+.panel--clear .hop.is-passed .hop__node::after,
+.panel--clear .hop.is-stop .hop__node::before {
+  background: color-mix(in srgb, var(--c-clear) 70%, transparent);
 }
 
 .hop.is-stop .hop__name {
@@ -708,11 +793,10 @@ p {
     letter-spacing: 0.08em;
   }
 
-  .panel__bar,
-  .panel__sub {
+  .panel__bar {
     flex-direction: column;
     align-items: flex-start;
-    gap: 5px;
+    gap: 6px;
   }
 }
 
@@ -738,28 +822,95 @@ p {
   padding-bottom: 16px;
 }
 
-.clock {
-  font-family: var(--wide);
-  font-variation-settings: 'wdth' 125, 'wght' 430;
-  font-feature-settings: 'tnum' 1;
-  font-size: clamp(2.9rem, 6.2vw, 4.1rem);
-  line-height: 0.94;
-  letter-spacing: -0.02em;
-  color: var(--c-breach);
-  margin-top: 8px;
-  display: block;
-}
-
-.clock__foot {
+.verdict__rate {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--dim);
   margin-top: 10px;
 }
 
-.clock__foot b {
+/* ── obligation: the clock, and what it is counting ───────────────────────── */
+
+/* The instrument is present from the first frame and resolves in place. It
+   does not fade in — a clock that appears has no authority, a clock that was
+   always there and has just found its number does. */
+.obl {
+  border-top: 1px solid var(--line);
+  border-left: 2px solid var(--line);
+  padding: 16px 14px 18px;
+  transition: border-left-color 500ms ease;
+}
+
+.obl.is-on {
+  border-left-color: var(--c-breach);
+}
+
+.obl__clock {
+  display: block;
+  margin-top: 10px;
+  font-variation-settings: 'wdth' 125, 'wght' 440;
+  font-size: clamp(2rem, 7vw, 3.5rem);
+  line-height: 0.96;
+  letter-spacing: -0.022em;
+  white-space: nowrap;
+  color: var(--dim);
+  transition: color 500ms ease;
+}
+
+.obl.is-on .obl__clock {
+  color: var(--c-breach);
+}
+
+.obl__note {
+  margin-top: 12px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--dim);
+  max-width: 44em;
+}
+
+.obl__note b {
   font-weight: 400;
   color: var(--fg);
+}
+
+.obl__ledger {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line-soft);
+  display: grid;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--dim);
+}
+
+.obl__ledger > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.obl__ledger dt,
+.obl__ledger dd {
+  margin: 0;
+}
+
+.obl__ledger dd {
+  color: var(--fg);
+  text-align: right;
+}
+
+.obl__ledger .obl__v {
+  color: var(--dim);
+  transition: color 500ms ease;
+}
+
+.obl.is-on .obl__ledger .obl__v {
+  color: var(--c-breach);
 }
 
 .verdict__flag {
@@ -1568,14 +1719,25 @@ p {
 
 /* ── reveal ───────────────────────────────────────────────────────────────── */
 
+/* Content is visible by default and the reveal is pure enhancement.
+   Hiding first and revealing on scroll means any failure in the reveal path —
+   a missed observer callback, a jump past the element via a nav anchor, a
+   restored scroll position — leaves a section permanently blank. That trade is
+   never worth a fade. The hidden state is only armed once JS has confirmed it
+   can drive it, via .js-reveal on the root. */
 .rise {
+  opacity: 1;
+  transform: none;
+}
+
+.js-reveal .rise {
   opacity: 0;
   transform: translateY(14px);
   transition: opacity 640ms cubic-bezier(0.2, 0.7, 0.2, 1),
     transform 640ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.rise.is-on {
+.js-reveal .rise.is-on {
   opacity: 1;
   transform: none;
 }

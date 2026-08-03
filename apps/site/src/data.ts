@@ -61,6 +61,18 @@ export const ESCALATED_PATH: HopRow[] = [
   },
 ];
 
+/**
+ * The advisory and the package are where the wave starts, and the clause is
+ * where it stops — so the hops actually walked are the rows in between:
+ * minimatch, glob, jest, build-api, Northwind. Five, as advertised.
+ */
+export const HOP_TOTAL = ESCALATED_PATH.length - 3;
+
+/** How many hops a traversal that has reached `n` rows has actually walked. */
+export function hopsWalked(reached: number): number {
+  return Math.min(Math.max(reached - 2, 0), HOP_TOTAL);
+}
+
 export const SUPPRESSED_PATH: HopRow[] = [
   {
     band: 'SBOM',
@@ -226,4 +238,6 @@ export const HERO = {
   customer: HERO_CUSTOMER,
   clause: HERO_CLAUSE,
   service: HERO_SERVICE,
+  contract: 'MSA 2024-11-02',
+  regime: 'NIS2 Art. 23',
 };

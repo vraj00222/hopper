@@ -1,8 +1,8 @@
 {
   "catalogVersion": "2026.08.03",
-  "dateReleased": "2026-08-03T18:43:10.8574Z",
+  "dateReleased": "2026-08-03T18:55:09.067Z",
   "count": 1657,
-  "fetched_at": "2026-08-03T19:28:11.762Z",
+  "fetched_at": "2026-08-03T20:02:26.156Z",
   "origin": "cisa",
   "cves": [
     {
@@ -147,7 +147,7 @@
       "product": "SMA1000 Appliances",
       "vulnerabilityName": "SonicWall SMA1000 Appliances Server-Side Request Forgery Vulnerability",
       "dateAdded": "2026-07-14",
-      "knownRansomwareCampaignUse": false
+      "knownRansomwareCampaignUse": true
     },
     {
       "cveID": "CVE-2026-15410",
@@ -155,7 +155,7 @@
       "product": "SMA1000 Appliances",
       "vulnerabilityName": "SonicWall SMA1000 Appliances Code Injection Vulnerability",
       "dateAdded": "2026-07-14",
-      "knownRansomwareCampaignUse": false
+      "knownRansomwareCampaignUse": true
     },
     {
       "cveID": "CVE-2008-4128",

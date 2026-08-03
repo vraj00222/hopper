@@ -62,16 +62,11 @@ function litFor(act: Act, current: Act): 'past' | 'now' | 'future' {
   return a < c ? 'past' : 'future';
 }
 
-const SEVERITY_LEVEL: Record<string, number> = { LOW: 0.25, MODERATE: 0.5, HIGH: 0.75, CRITICAL: 1 };
-
-/** severity has to read in the first 200ms, so it is drawn as a level */
-function severityFraction(focus: FocusView | null): number {
-  const adv = focus?.advisory;
-  if (!adv) return 0;
-  if (Number.isFinite(adv.cvss) && adv.cvss > 0) return Math.min(1, adv.cvss / 10);
-  return SEVERITY_LEVEL[String(adv.severity).toUpperCase()] ?? 0.5;
-}
-
+/**
+ * The severity meter and the identifiers now live in the header, where they
+ * stay legible while this panel restages. What is left here is the number only
+ * this panel can say, and the sentence a human wrote.
+ */
 function AdvisoryHead({
   focus,
   count,
@@ -80,17 +75,6 @@ function AdvisoryHead({
   count: { value: string; tone: string };
 }) {
   const adv = focus?.advisory;
-  // built from what is actually present — real payloads are missing fields
-  const ident = adv
-    ? [
-        adv.cve_id ?? adv.ghsa_id,
-        Number.isFinite(adv.cvss) ? `cvss ${adv.cvss.toFixed(1)}` : null,
-        adv.package_name,
-        adv.vulnerable_range,
-      ]
-        .filter(Boolean)
-        .join('  ·  ')
-    : '';
 
   return (
     <div className="adv">
@@ -100,24 +84,9 @@ function AdvisoryHead({
       </div>
       <div className="adv-body">
         {adv ? (
-          <>
-            <div className="sev" key={`${adv.ghsa_id}-sev`}>
-              <span className="sev-track">
-                <span
-                  className="sev-fill"
-                  style={{ width: `${(severityFraction(focus) * 100).toFixed(1)}%` }}
-                />
-              </span>
-              <span className="sev-word">{adv.severity}</span>
-              {adv.in_kev && <span className="sev-num">IN KEV</span>}
-            </div>
-            <div className="adv-line" key={`${adv.ghsa_id}-id`}>
-              {ident}
-            </div>
-            <div className="adv-summary" key={`${adv.ghsa_id}-sum`}>
-              {adv.summary}
-            </div>
-          </>
+          <div className="adv-summary" key={`${adv.ghsa_id}-sum`}>
+            {adv.summary}
+          </div>
         ) : (
           <div className="adv-line">waiting for an advisory</div>
         )}
@@ -153,7 +122,7 @@ export function App() {
 
   return (
     <div className={`shell${reducedMotion ? ' no-motion' : ''}`} data-stage={act}>
-      <Header status={app.status} graph={app.graph_stats} mode={mode} />
+      <Header status={app.status} graph={app.graph_stats} mode={mode} focus={focus} />
 
       <div className="main">
         <div className="col-left">
@@ -178,6 +147,7 @@ export function App() {
           <FeedPanel
             feed={app.feed}
             funnel={app.funnel}
+            focused={focus?.advisory?.ghsa_id ?? null}
             selectable={new Set(BEAT_BY_GHSA.keys())}
             onSelect={(id) => {
               const step = BEAT_BY_GHSA.get(id);

@@ -12,9 +12,9 @@ coverage/
 .vite/
 .turbo/
 
-# no markdown in this repo
+# no markdown in this repo except the README
 *.md
-!/dev/null
+!README.md
 scratch/
 .playwright-mcp/
 .screenshots/

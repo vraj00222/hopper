@@ -14,9 +14,9 @@
 :root {
   color-scheme: dark;
 
-  /* Instrument Sans for prose, Spline Sans Mono for data, Archivo only at the
-     two extremes of scale. See the comment in index.html. */
-  --sans: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Chivo for prose, Spline Sans Mono for data, Archivo only at the two
+     extremes of scale. See the comment in index.html for why Chivo. */
+  --sans: 'Chivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'Spline Sans Mono', ui-monospace, 'SF Mono', Menlo, monospace;
   --display: 'Archivo', system-ui, sans-serif;
 
@@ -37,6 +37,27 @@
 }
 
 * { box-sizing: border-box; }
+
+/* ── the three motions ──────────────────────────────────────────────────────
+ *
+ * Everything that moves on this screen is one of these three, so that motion
+ * carries meaning rather than decoration:
+ *
+ *   hopperScan     something is working and has not answered yet
+ *   hopperPulse    something is waiting on a person
+ *   hopperTension  two agents just disagreed
+ *
+ * hopperTension is the one that matters. It is not an attention-getter — it is
+ * a flinch: two pixels up, one back down, over and done in half a second. The
+ * row it fires on is the row that broke consensus.
+ */
+@keyframes hopperScan { 0% { transform: translateX(-100%); } 100% { transform: translateX(240%); } }
+@keyframes hopperPulse { 0% { opacity: 0.25; } 50% { opacity: 1; } 100% { opacity: 0.25; } }
+@keyframes hopperTension {
+  0%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-2px); }
+  65% { transform: translateY(1px); }
+}
 
 html, body, #root { height: 100%; margin: 0; }
 
@@ -84,7 +105,7 @@ body {
 
 .shell {
   display: grid;
-  grid-template-rows: 42px minmax(0, 1fr) 44px;
+  grid-template-rows: 46px minmax(0, 1fr) 44px;
   height: 100%;
 }
 
@@ -180,25 +201,102 @@ body {
 
 /* ── header ─────────────────────────────────────────────────────────────── */
 
-.header { display: flex; align-items: center; gap: 20px; padding: 0 20px; }
+/*
+ * The header used to be a row of counters. Counters are the least urgent thing
+ * on this screen — they do not change while you watch, and none of them tells
+ * you what you are looking at. So the space now carries the identity of the
+ * advisory in focus:
+ *
+ *   HOPPER │ CVE-2026-69152  ▁▃▅▇ HIGH 7.5  brace-expansion < 1.1.18
+ *
+ * It is the one line that answers "what am I looking at" from the back of the
+ * room, and it stays legible while every panel below it restages. The counters
+ * moved right and got quieter; they are context, not headline.
+ */
+.header { display: flex; align-items: center; gap: 15px; padding: 0 20px; min-width: 0; }
 
 .wordmark {
   font-family: var(--display);
   font-weight: 700;
   font-variation-settings: 'wdth' 122;
-  font-size: 14px;
+  font-size: 13px;
   letter-spacing: 0.3em;
+  flex: none;
 }
+
+.head-rule { width: 1px; height: 14px; background: var(--ink-ghost); flex: none; }
+
+.head-id { display: flex; align-items: center; gap: 11px; min-width: 0; flex: 1; }
+
+.head-cve {
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  color: var(--paper);
+  flex: none;
+  white-space: nowrap;
+}
+
+/*
+ * The severity meter: four bars of rising height, filled to the level. A
+ * continuous bar says "how far along"; this says "which of four", which is what
+ * a severity actually is. It reads before the word does.
+ */
+.sev-meter { display: flex; align-items: flex-end; gap: 2px; flex: none; height: 14px; }
+.sev-tick { width: 3px; background: var(--ink-ghost); transition: background 300ms var(--ease); }
+.sev-tick:nth-child(1) { height: 5px; }
+.sev-tick:nth-child(2) { height: 8px; }
+.sev-tick:nth-child(3) { height: 11px; }
+.sev-tick:nth-child(4) { height: 14px; }
+.sev-tick.is-on { background: var(--signal); animation: sevTick 260ms var(--ease) both; }
+.sev-meter.is-breach .sev-tick.is-on { background: var(--breach); }
+.sev-meter.is-clear .sev-tick.is-on { background: var(--clear); }
+.sev-tick.is-on:nth-child(2) { animation-delay: 60ms; }
+.sev-tick.is-on:nth-child(3) { animation-delay: 120ms; }
+.sev-tick.is-on:nth-child(4) { animation-delay: 180ms; }
+@keyframes sevTick { from { transform: scaleY(0.2); opacity: 0; } to { transform: none; opacity: 1; } }
+
+.head-sev {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+  color: var(--signal);
+  flex: none;
+  white-space: nowrap;
+}
+.head-sev.is-breach { color: var(--breach); }
+.head-sev.is-clear { color: var(--clear); }
+
+.head-subject {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.head-kev {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--breach);
+  border: 1px solid color-mix(in srgb, var(--breach) 45%, transparent);
+  padding: 2px 5px;
+  flex: none;
+}
+
+.head-idle { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); flex: 1; min-width: 0; }
 
 .header-stats {
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: 11px;
   font-family: var(--mono);
-  font-size: 10.5px;
-  color: var(--muted);
-  flex: 1;
-  min-width: 0;
+  font-size: 10px;
+  color: var(--ink-faint);
+  flex: none;
 }
 .sep { color: var(--ink-ghost); }
 
@@ -225,6 +323,9 @@ body {
 
 /* ── act 1 · the advisory arriving ──────────────────────────────────────── */
 
+/* the severity meter and the identifiers moved to the header, where they stay
+   legible while this panel restages — what is left here is the number that
+   only this panel can say, and the sentence a human wrote */
 .adv { display: flex; gap: 22px; align-items: flex-start; flex: none; }
 
 .hop-count { display: flex; align-items: baseline; gap: 7px; line-height: 1; flex: none; }
@@ -239,30 +340,7 @@ body {
 .hop-count.is-idle .hop-count-n { color: var(--ink-ghost); font-size: 26px; line-height: 1.9; }
 .hop-count-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.22em; color: var(--muted); }
 
-.adv-body { min-width: 0; display: flex; flex-direction: column; gap: 5px; padding-top: 3px; }
-
-/* severity reads in the first 200ms: the meter draws before anything else */
-.sev { display: flex; align-items: center; gap: 11px; height: 12px; }
-.sev-track { position: relative; flex: none; width: 128px; height: 3px; background: var(--rule-soft); overflow: hidden; }
-.sev-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  height: 100%;
-  background: var(--signal);
-  transform-origin: left center;
-  animation: sevDraw 380ms var(--ease) both;
-}
-@keyframes sevDraw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-
-.sev-word {
-  font-family: var(--display);
-  font-weight: 700;
-  font-variation-settings: 'wdth' 125;
-  font-size: 10px;
-  letter-spacing: 0.2em;
-  color: var(--paper);
-}
-.sev-num { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.adv-body { min-width: 0; display: flex; flex-direction: column; gap: 6px; padding-top: 6px; justify-content: center; }
 
 /* the identifiers sweep in behind a clip — an event, not a list item */
 .adv-line {
@@ -428,6 +506,18 @@ body {
   to { opacity: 1; letter-spacing: 0; }
 }
 
+/*
+ * Dissent is the beat this whole screen exists for, so it is drawn three ways
+ * at once and each does a different job: the row TINTS (so you can find it
+ * without reading), it FLINCHES once via hopperTension (so you catch it even if
+ * you were looking elsewhere), and the bracket in the gutter TIES it to the row
+ * it contradicts (so you can see what the disagreement is about).
+ */
+.agent-row.is-conflict {
+  background: color-mix(in srgb, var(--breach) 7%, transparent);
+  animation: hopperTension 520ms var(--ease) 1;
+  transition: background 400ms linear;
+}
 .agent-row.is-conflict .agent-verdict,
 .agent-row.is-conflict .agent-conf { color: var(--breach); }
 .agent-row.is-clear .agent-verdict { color: var(--clear); }
@@ -441,9 +531,8 @@ body {
   inset: 0;
   width: 34%;
   background: var(--signal);
-  animation: scan 1150ms var(--ease) infinite;
+  animation: hopperScan 1150ms linear infinite;
 }
-@keyframes scan { 0% { transform: translateX(-110%); } 100% { transform: translateX(400%); } }
 
 .agent-detail {
   grid-column: 3 / span 2;
@@ -468,6 +557,16 @@ body {
   border-right: 0;
   pointer-events: none;
   animation: bracketIn 460ms var(--ease) both;
+}
+/* the reference's solid gutter bar, kept as the bracket's spine */
+.dissent::after {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  background: var(--breach);
 }
 @keyframes bracketIn { from { opacity: 0; transform: translateX(-5px); } to { opacity: 1; transform: none; } }
 
@@ -568,6 +667,22 @@ body {
 /* ── act 4 · the gate ───────────────────────────────────────────────────── */
 
 .gate-stack { min-height: 0; overflow-y: auto; }
+
+/* the one thing on this screen that cannot happen on its own is the one thing
+   drawn inside a border — everything else is hairlines and space */
+.gate-block {
+  border: 1px solid color-mix(in srgb, var(--signal) 40%, transparent);
+  background: color-mix(in srgb, var(--signal) 6%, transparent);
+  padding: 10px 13px 12px;
+}
+.gate-mark {
+  width: 5px;
+  height: 5px;
+  flex: none;
+  background: var(--signal);
+  animation: hopperPulse 1.6s ease-in-out infinite;
+}
+
 .gate-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; }
 .gate-title { font-size: 13.5px; color: var(--paper); letter-spacing: -0.005em; }
 .gate-body {
@@ -588,7 +703,10 @@ body {
   font-size: 8.5px;
   letter-spacing: 0.22em;
   color: var(--signal);
-  margin-bottom: 7px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
 }
 
 .approve-btn {
@@ -650,11 +768,28 @@ body {
   grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 12px;
-  padding: 4px 0;
+  padding: 4px 0 4px 10px;
   border-bottom: 1px solid var(--rule-soft);
   font-family: var(--mono);
   font-size: 11px;
+  position: relative;
 }
+
+/* the advisory in focus carries a lit edge and a faint ground, so the feed
+   says which row the rest of the screen is about without a second colour */
+.feed-row.is-focus { background: var(--raise); }
+.feed-row.is-focus::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  background: var(--signal);
+}
+.feed-row.is-focus.is-escalated::before { background: var(--breach); }
+.feed-row.is-focus.is-suppressed::before { background: var(--clear); }
+.feed-row.is-focus .feed-pkg { color: var(--paper); }
 .feed-row.is-actionable { cursor: pointer; }
 .feed-row.is-actionable:hover { background: var(--raise); }
 .feed-row.is-actionable:focus-visible { outline: 1px solid var(--signal); outline-offset: -1px; }
@@ -679,23 +814,35 @@ body {
 
 .feed-kev { font-size: 8.5px; letter-spacing: 0.08em; color: var(--breach); margin-left: 7px; }
 
+/* `…47 suppressed` is the product's whole argument, so it gets an affordance
+   that says "there is more here" rather than reading as a footer */
 .feed-collapse {
   width: 100%;
   text-align: left;
   background: none;
   border: 0;
-  border-bottom: 1px solid var(--rule-soft);
-  padding: 7px 0;
+  border-top: 1px solid var(--rule-soft);
+  padding: 8px 0 8px 10px;
+  margin-top: 3px;
   font-family: var(--mono);
   font-size: 11px;
   color: var(--ink-faint);
   cursor: pointer;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
 .feed-collapse:hover { color: var(--paper); }
+.feed-collapse:focus-visible { outline: 1px solid var(--signal); outline-offset: -1px; }
 .feed-collapse-hint { color: var(--ink-ghost); font-size: 9.5px; }
+.feed-caret { color: var(--clear); flex: none; width: 9px; display: inline-block; }
+.feed-collapse-label { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+/* an expanded suppression is evidence, not an alert — it sits indented and
+   quieter than the rows above it */
+.feed-row.is-collapsed { padding-left: 27px; color: var(--ink-ghost); }
+.feed-row.is-collapsed .feed-pkg { color: color-mix(in srgb, var(--muted) 72%, transparent); }
 
 /* ── audit ──────────────────────────────────────────────────────────────── */
 
