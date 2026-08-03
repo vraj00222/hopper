@@ -1,0 +1,1413 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HOPPER — five hops from a customer</title>
+
+    <!--
+      HOPPER — presentation deck.
+
+      One file. No build, no dependencies, no network required. Double-click it.
+
+      THE ORGANISING IDEA IS THE DATUM.
+      A full-bleed hairline sits at an identical y on all five slides. It never
+      moves and never fades during a transition, so advancing reads as panning
+      one continuous instrument rather than flipping cards. Every slide's
+      primary object is measured against it. On slide 3 it does semantic work:
+      above the line are the two clocks the industry tracks, below it is the
+      one nothing tracks.
+
+      The drawing vocabulary is a technical survey: hairlines, extension and
+      leader lines, ghost outlines of superseded values, an explicit
+      magnification note. Hopper's claim is that it *measures a traversal*, and
+      this is how a measured traversal is drawn.
+
+      COLOUR IS STATE, NEVER DECORATION.
+      amber  = in flight        oxide = obligation at risk       teal = cleared
+      Everything structural is bone and muted. The slide counter is navigation,
+      not state, so it is bone and muted too — it gets no colour.
+
+      Typography matches apps/ui and apps/site so the three surfaces read as one
+      system: Archivo (wdth 125) for numerals, Chivo for prose, Spline Sans Mono
+      for every number, package name, path and timestamp. Google Fonts is a
+      progressive enhancement — the local fallback stacks below carry the deck
+      when conference wifi dies.
+    -->
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%230F141C'/%3E%3Crect x='3' y='7' width='10' height='1' fill='%237A8595'/%3E%3Crect x='11' y='4' width='2' height='8' fill='%23E8A33D'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112..125,400..700&family=Chivo:wght@300;400;500;600;700&family=Spline+Sans+Mono:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* ── the six ──────────────────────────────────────────────────────── */
+      :root {
+        --ground: #0f141c;
+        --paper: #e8e4da;
+        --muted: #7a8595;
+        --signal: #e8a33d;
+        --breach: #c7433a;
+        --clear: #4a9b8e;
+
+        --sans: 'Chivo', system-ui, -apple-system, 'Segoe UI', Roboto,
+          'Helvetica Neue', Arial, sans-serif;
+        --mono: 'Spline Sans Mono', ui-monospace, SFMono-Regular, 'SF Mono',
+          Menlo, Consolas, 'Liberation Mono', monospace;
+        --display: 'Archivo', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+        --rule: color-mix(in srgb, var(--paper) 13%, transparent);
+        --rule-soft: color-mix(in srgb, var(--paper) 7%, transparent);
+        --ink-dim: color-mix(in srgb, var(--paper) 56%, transparent);
+        --ink-faint: color-mix(in srgb, var(--paper) 30%, transparent);
+        --ink-ghost: color-mix(in srgb, var(--paper) 15%, transparent);
+
+        /* instrument housing — the deck's fixed geometry */
+        --hud: clamp(38px, 4.4vh, 52px);
+        --pad-x: clamp(44px, 4.6vw, 92px);
+        --pad-y: clamp(16px, 2.4vh, 30px);
+        /* the datum's height fraction of the content box. .field and .readout
+           below are flex 1 : 0.78, so the boundary always lands here. */
+        --ease: cubic-bezier(0.16, 0.72, 0.24, 1);
+        --step: 300ms; /* HOP_INTERVAL_MS — the probe's cadence */
+
+        color-scheme: dark;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden; /* a deck never scrolls */
+      }
+
+      body {
+        background: var(--ground);
+        color: var(--paper);
+        font-family: var(--sans);
+        font-weight: 300;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+        font-synthesis-weight: none;
+        cursor: default;
+        user-select: none;
+      }
+
+      ::selection {
+        background: var(--signal);
+        color: var(--ground);
+      }
+      :focus-visible {
+        outline: 2px solid var(--paper);
+        outline-offset: 3px;
+      }
+
+      /* ── type roles ───────────────────────────────────────────────────── */
+      .lbl {
+        font-family: var(--mono);
+        font-weight: 400;
+        font-size: clamp(9px, 0.66vw, 12px);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        white-space: nowrap;
+      }
+      .mono {
+        font-family: var(--mono);
+        font-weight: 400;
+        font-variant-numeric: tabular-nums;
+      }
+      .num {
+        font-family: var(--display);
+        font-variation-settings: 'wdth' 125, 'wght' 500;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.015em;
+        line-height: 0.86;
+        color: var(--paper);
+      }
+
+      /* ── housing ──────────────────────────────────────────────────────── */
+      .hud {
+        position: fixed;
+        left: var(--pad-x);
+        right: var(--pad-x);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        height: var(--hud);
+        z-index: 4;
+      }
+      .hud--top {
+        top: 0;
+        border-bottom: 1px solid var(--rule-soft);
+      }
+      .hud--bot {
+        bottom: 0;
+        border-top: 1px solid var(--rule-soft);
+      }
+
+      .wordmark {
+        font-family: var(--display);
+        font-variation-settings: 'wdth' 125, 'wght' 600;
+        font-size: clamp(12px, 0.92vw, 16px);
+        letter-spacing: 0.3em;
+        color: var(--paper);
+      }
+      .wordmark::after {
+        content: 'Every alert is five hops from a customer.';
+        font-family: var(--sans);
+        font-variation-settings: normal;
+        font-weight: 300;
+        font-size: clamp(10px, 0.72vw, 13px);
+        letter-spacing: 0;
+        color: var(--ink-faint);
+        margin-left: 1.1em;
+      }
+
+      #chapter {
+        color: var(--ink-dim);
+      }
+      #chapter b {
+        color: var(--paper);
+        font-weight: 400;
+      }
+
+      #source {
+        color: var(--ink-ghost);
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* counter — five marks, current one full-height bone. No colour: this is
+         navigation, not state. */
+      .counter {
+        display: flex;
+        align-items: flex-end;
+        gap: clamp(5px, 0.5vw, 8px);
+      }
+      .counter i {
+        display: block;
+        width: 1px;
+        height: 7px;
+        background: var(--ink-faint);
+        transition: height 240ms var(--ease), background 240ms var(--ease);
+      }
+      .counter i.on {
+        height: 15px;
+        background: var(--paper);
+      }
+      .counter b {
+        font-family: var(--mono);
+        font-weight: 400;
+        font-size: clamp(9px, 0.66vw, 12px);
+        letter-spacing: 0.14em;
+        color: var(--ink-dim);
+        margin-left: clamp(8px, 0.8vw, 14px);
+        line-height: 1;
+      }
+      .counter b em {
+        font-style: normal;
+        color: var(--paper);
+      }
+
+      /* ── the stage ────────────────────────────────────────────────────── */
+      .slide {
+        position: fixed;
+        inset: var(--hud) 0;
+        padding: var(--pad-y) var(--pad-x);
+        display: none;
+        flex-direction: column;
+      }
+      .slide.on {
+        display: flex;
+      }
+
+      .field {
+        flex: 1 0 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        /* eyebrow pins to the top of the field, the measured object hangs on
+           the datum, and the air sits between them */
+        justify-content: space-between;
+        overflow: visible;
+      }
+
+      /* THE DATUM. Full bleed — it belongs to the housing, not the content.
+         It is the only element that does not animate on slide change, which is
+         what makes five slides read as one instrument. */
+      .datum {
+        flex: 0 0 auto;
+        position: relative;
+        height: 0;
+        border-top: 1px solid var(--rule);
+        margin: 0 calc(-1 * var(--pad-x));
+      }
+      .datum span {
+        position: absolute;
+        right: var(--pad-x);
+        top: 8px; /* below the line — the field above it must stay clear */
+        font-family: var(--mono);
+        font-weight: 400;
+        font-size: clamp(9px, 0.66vw, 12px);
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink-ghost);
+        white-space: nowrap;
+      }
+      /* slide 5 puts the countdown top-right of the readout; the caption moves
+         out of its way rather than shrinking it */
+      .datum.left span {
+        right: auto;
+        left: var(--pad-x);
+      }
+
+      .readout {
+        flex: 0.78 0 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding-top: clamp(24px, 3.4vh, 42px); /* clears the datum caption */
+      }
+
+      /* content animates in; the datum does not */
+      .slide.on .field,
+      .slide.on .readout {
+        animation: rise 400ms var(--ease) both;
+      }
+      .slide.on .readout {
+        animation-delay: 70ms;
+      }
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(9px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      /* the conclusion mark — a bone rule to the left of every punchline.
+         Structural, repeated, and the same on all five slides. */
+      .lands {
+        display: grid;
+        grid-template-columns: 2px 1fr;
+        gap: 0 clamp(16px, 1.5vw, 26px);
+        align-items: stretch;
+        max-width: 86ch;
+      }
+      .lands::before {
+        content: '';
+        background: var(--paper);
+      }
+      .lands p {
+        margin: 0;
+        font-size: clamp(1.18rem, min(1.92vw, 3.2vh), 2.1rem);
+        line-height: 1.28;
+        font-weight: 300;
+        letter-spacing: -0.014em;
+        color: var(--paper);
+      }
+      .lands p + p {
+        margin-top: 0.28em;
+      }
+      .eyebrow {
+        display: flex;
+        align-items: baseline;
+        gap: clamp(10px, 1vw, 18px);
+        margin-bottom: clamp(10px, 1.6vh, 20px);
+      }
+      .eyebrow .rule {
+        flex: 1;
+        height: 1px;
+        background: var(--rule-soft);
+      }
+
+      /* ── stat row ─────────────────────────────────────────────────────── */
+      .stats {
+        display: flex;
+        align-items: flex-end;
+        gap: clamp(28px, 3.4vw, 64px);
+      }
+      .stat .num {
+        font-size: clamp(2rem, min(3.5vw, 6vh), 3.9rem);
+        display: block;
+      }
+      .stat .lbl {
+        margin-top: 0.75em;
+      }
+
+      /* ═══ SLIDE 1 — the volume ════════════════════════════════════════ */
+      .ticks {
+        --tick-h: clamp(14px, 2.4vh, 25px);
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(50, 1fr);
+        /* fixed rows: the one tall mark must not resize the row it sits in */
+        grid-auto-rows: var(--tick-h);
+        row-gap: clamp(7px, 1.35vh, 15px);
+        overflow: visible;
+      }
+      .ticks i {
+        display: block;
+        width: 3px;
+        height: 100%;
+        background: var(--ink-ghost);
+        justify-self: center;
+        animation: tickin 300ms var(--ease) both;
+      }
+      @keyframes tickin {
+        from {
+          opacity: 0;
+          transform: scaleY(0.3);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      /* the one that is real. Amber, and it overruns its row to cross the
+         datum — the only mark in the field that breaks the measurement line. */
+      .ticks i.real {
+        background: var(--signal);
+        align-self: start;
+        height: calc(var(--tick-h) + clamp(26px, 4.6vh, 48px));
+        animation: tickin 420ms var(--ease) both;
+        animation-delay: 1250ms;
+      }
+      .real-note {
+        position: absolute;
+        top: 100%;
+        left: 57%; /* mirrors column 29 of 50 — the amber tick's centre */
+        margin-left: clamp(12px, 1.1vw, 20px);
+        margin-top: clamp(20px, 3.6vh, 42px);
+        white-space: nowrap;
+        animation: fadein 500ms var(--ease) both;
+        animation-delay: 1500ms;
+      }
+      @keyframes fadein {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      .real-note .v {
+        font-family: var(--display);
+        font-variation-settings: 'wdth' 125, 'wght' 500;
+        font-size: clamp(1.5rem, min(2.5vw, 4.2vh), 2.7rem);
+        line-height: 0.9;
+        color: var(--signal);
+        display: block;
+      }
+      .real-note .lbl {
+        margin-top: 0.6em;
+        color: var(--ink-dim);
+      }
+
+      /* ═══ SLIDE 2 — the sorting stopped ═══════════════════════════════ */
+      .enrich {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        margin-bottom: clamp(14px, 2.4vh, 30px);
+      }
+      .enrich .solid {
+        flex: 0 0 47%;
+        height: 1px;
+        background: var(--paper);
+      }
+      /* the wall the line runs into on 15 April 2026 */
+      .enrich .stop {
+        width: 1px;
+        height: clamp(56px, 11vh, 124px);
+        background: var(--paper);
+        flex: none;
+      }
+      /* the government's line of enrichment literally goes dashed */
+      .enrich .dashed {
+        flex: 1;
+        height: 1px;
+        background: repeating-linear-gradient(
+          to right,
+          var(--ink-ghost) 0 3px,
+          transparent 3px 9px
+        );
+      }
+      .enrich-tags {
+        display: flex;
+      }
+      .enrich-tags .a {
+        flex: 0 0 47%;
+        text-align: right;
+        padding-right: clamp(10px, 1vw, 16px);
+      }
+      .enrich-tags .b {
+        flex: 1;
+        padding-left: clamp(10px, 1vw, 16px);
+        display: flex;
+        gap: clamp(22px, 2.6vw, 48px);
+      }
+      .enrich-tags .k {
+        font-family: var(--display);
+        font-variation-settings: 'wdth' 125, 'wght' 500;
+        font-size: clamp(1.05rem, min(1.7vw, 2.9vh), 1.85rem);
+        color: var(--paper);
+        line-height: 1;
+        display: block;
+      }
+      .enrich-tags .k.q {
+        color: var(--ink-dim);
+      }
+      .enrich-tags .lbl {
+        margin-top: 0.6em;
+      }
+
+      /* depth — two measures against one scale */
+      .measures {
+        display: grid;
+        grid-template-columns: max-content 1fr max-content;
+        align-items: center;
+        gap: clamp(9px, 1.5vh, 16px) clamp(14px, 1.5vw, 26px);
+      }
+      .measures .track {
+        position: relative;
+        height: clamp(13px, 2.1vh, 22px);
+        background: var(--rule-soft);
+      }
+      .measures .fill {
+        position: absolute;
+        inset: 0 auto 0 0;
+        background: var(--ink-dim);
+      }
+      .measures .fill.direct {
+        background: var(--paper);
+      }
+      /* the 95% that arrived through other packages: hatched, because it was
+         never a choice anybody made */
+      .measures .fill.transitive {
+        background: repeating-linear-gradient(
+          -45deg,
+          var(--ink-faint) 0 2px,
+          transparent 2px 6px
+        );
+        border-left: 1px solid var(--ink-faint);
+        border-right: 1px solid var(--ink-faint);
+      }
+      .measures .v {
+        font-family: var(--display);
+        font-variation-settings: 'wdth' 125, 'wght' 500;
+        font-size: clamp(1rem, min(1.55vw, 2.7vh), 1.7rem);
+        color: var(--paper);
+        line-height: 1;
+        text-align: right;
+        white-space: nowrap;
+      }
+
+      /* ═══ SLIDE 3 — the two clocks ════════════════════════════════════ */
+      /* Column tracks are FIXED, not max-content: the grid above the datum and
+         the grid below it must share identical geometry or the bars no longer
+         share a scale, which is the entire argument of the slide. */
+      .clocks {
+        display: grid;
+        grid-template-columns:
+          clamp(132px, 13.5vw, 210px) 1fr clamp(150px, 15vw, 234px);
+        align-items: center;
+        gap: clamp(14px, 2.6vh, 30px) clamp(14px, 1.6vw, 28px);
+      }
+      .bar {
+        position: relative;
+        height: clamp(17px, 2.9vh, 30px);
+      }
+      /* extension line — carries the eye from a short bar to its value */
+      .bar::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        height: 1px;
+        background: repeating-linear-gradient(
+          to right,
+          var(--ink-ghost) 0 2px,
+          transparent 2px 7px
+        );
+      }
+      .bar .now {
+        position: absolute;
+        inset: 0 auto 0 0;
+        background: var(--paper);
+      }
+      .bar .now.flight {
+        background: var(--signal);
+      }
+      /* the superseded value, drawn at true scale as a ghost outline. Both
+         directions of the scissor in one image, no second chart. */
+      .bar .was {
+        position: absolute;
+        inset: 0 auto 0 0;
+        border: 1px dashed var(--ink-ghost);
+      }
+      .cap {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5em;
+      }
+      .cap .v {
+        font-family: var(--display);
+        font-variation-settings: 'wdth' 125, 'wght' 500;
+        font-size: clamp(1.25rem, min(2.05vw, 3.5vh), 2.3rem);
+        line-height: 1;
+        color: var(--paper);
+        white-space: nowrap;
+      }
+      .cap .v.flight {
+        color: var(--signal);
+      }
+      .cap .v.risk {
+        color: var(--breach);
+      }
+      .cap .lbl {
+        white-space: normal;
+      }
+      .obligation .now {
+        background: var(--breach);
+        min-width: 3px; /* 4h of 252d is 0.6px at this width. It is drawn at
+                           true scale and floored so it renders at all. */
+      }
+      .regimes {
+        display: flex;
+        gap: clamp(18px, 2.2vw, 42px);
+        margin-top: clamp(12px, 2.2vh, 26px);
+      }
+      .regimes div {
+        border-top: 1px solid var(--rule);
+        padding-top: clamp(7px, 1.1vh, 12px);
+      }
+      .regimes .k {
+        font-family: var(--mono);
+        font-weight: 500;
+        font-size: clamp(11px, 0.95vw, 16px);
+        color: var(--breach);
+        letter-spacing: 0.02em;
+        display: block;
+      }
+      .regimes .lbl {
+        margin-top: 0.5em;
+      }
+
+      /* ═══ SLIDE 4 — MOVEit ════════════════════════════════════════════ */
+      .chain4 {
+        display: flex;
+        align-items: center;
+        gap: clamp(10px, 1.1vw, 20px);
+      }
+      .n4 {
+        white-space: nowrap;
+      }
+      .n4 .k {
+        font-family: var(--mono);
+        font-weight: 500;
+        font-size: clamp(12px, 1.08vw, 19px);
+        color: var(--paper);
+        display: block;
+        line-height: 1.15;
+      }
+      .n4 .lbl {
+        margin-top: 0.5em;
+      }
+      .n4.hit .k {
+        color: var(--signal);
+      }
+      .link4 {
+        flex: 1;
+        min-width: clamp(16px, 2vw, 40px);
+        height: 1px;
+        background: var(--signal);
+        opacity: 0.55;
+      }
+      .fan {
+        position: relative;
+        padding-left: clamp(18px, 2vw, 34px);
+        display: flex;
+        flex-direction: column;
+        gap: clamp(5px, 0.9vh, 10px);
+      }
+      .fan::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.55em;
+        bottom: 0.55em;
+        width: 1px;
+        background: color-mix(in srgb, var(--signal) 55%, transparent);
+      }
+      .fan .leaf {
+        position: relative;
+        font-family: var(--mono);
+        font-weight: 500;
+        font-size: clamp(12px, 1.08vw, 19px);
+        color: var(--paper);
+        white-space: nowrap;
+        line-height: 1.15;
+      }
+      .fan .leaf::before {
+        content: '';
+        position: absolute;
+        left: calc(-1 * clamp(18px, 2vw, 34px));
+        top: 0.55em;
+        width: clamp(13px, 1.5vw, 26px);
+        height: 1px;
+        background: color-mix(in srgb, var(--signal) 55%, transparent);
+      }
+      .outcome {
+        color: var(--breach);
+        font-family: var(--mono);
+        font-weight: 500;
+        font-size: clamp(12px, 1.08vw, 19px);
+        white-space: nowrap;
+        line-height: 1.15;
+      }
+      /* this is a narrative beat, not fine print — set it to be read */
+      .never {
+        margin-top: clamp(12px, 2.2vh, 26px);
+        max-width: 92ch;
+        font-size: clamp(0.92rem, min(1.15vw, 2vh), 1.28rem);
+        line-height: 1.45;
+        font-weight: 300;
+        color: var(--ink-dim);
+      }
+      .never b {
+        color: var(--paper);
+        font-weight: 400;
+      }
+
+      /* Equifax — the counterweight, staged back with luminance not colour */
+      .equifax {
+        border-top: 1px solid var(--rule-soft);
+        padding-top: clamp(10px, 1.7vh, 20px);
+        opacity: 0.82;
+      }
+      .eqline {
+        display: flex;
+        align-items: baseline;
+        gap: clamp(8px, 0.9vw, 16px);
+        flex-wrap: nowrap;
+        margin-top: clamp(7px, 1.1vh, 13px);
+      }
+      .eqline .m {
+        font-family: var(--mono);
+        font-weight: 400;
+        font-size: clamp(10.5px, 0.86vw, 15px);
+        color: var(--ink-dim);
+        white-space: nowrap;
+      }
+      .eqline .m b {
+        color: var(--paper);
+        font-weight: 500;
+      }
+      .eqline .sep {
+        flex: 1;
+        height: 1px;
+        background: var(--rule-soft);
+        min-width: 8px;
+      }
+      .eqline .m.risk b {
+        color: var(--breach);
+      }
+
+      /* ═══ SLIDE 5 — the traversal ═════════════════════════════════════ */
+      .trav {
+        display: grid;
+        align-items: center;
+        justify-content: stretch;
+        row-gap: clamp(9px, 1.5vh, 16px);
+        grid-template-columns:
+          auto 1fr auto 1fr auto 1fr auto 1fr auto 1fr auto 1fr auto;
+      }
+      .dot {
+        grid-row: 1;
+        width: clamp(9px, 0.95vw, 14px);
+        height: clamp(9px, 0.95vw, 14px);
+        border-radius: 50%;
+        border: 1px solid var(--ink-ghost);
+        justify-self: center;
+        background: transparent;
+        transition: background 200ms var(--ease), border-color 200ms var(--ease),
+          transform 200ms var(--ease);
+      }
+      .dot.lit {
+        background: var(--signal);
+        border-color: var(--signal);
+      }
+      .dot.head {
+        transform: scale(1.42);
+      }
+      .dot.land {
+        background: var(--breach);
+        border-color: var(--breach);
+        transform: scale(1.42);
+      }
+      .seg {
+        grid-row: 1;
+        height: 1px;
+        background: var(--ink-ghost);
+        position: relative;
+        overflow: hidden;
+      }
+      .seg::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: var(--signal);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform var(--step) linear;
+      }
+      .seg.lit::after {
+        transform: scaleX(1);
+      }
+      .nlbl {
+        grid-row: 2;
+        justify-self: center;
+        font-family: var(--mono);
+        font-weight: 400;
+        font-size: clamp(10.5px, 0.92vw, 16px);
+        color: var(--ink-faint);
+        white-space: nowrap;
+        padding: 0 clamp(4px, 0.5vw, 10px);
+        transition: color 200ms var(--ease);
+      }
+      .nlbl.lit {
+        color: var(--paper);
+      }
+      .nlbl.land {
+        color: var(--breach);
+        font-weight: 500;
+      }
+      /* the four source systems, drawn as dimension brackets under the spans
+         they cover. The four-systems argument, made rather than asserted. */
+      .brk {
+        grid-row: 3;
+        margin-top: clamp(4px, 0.7vh, 8px);
+        border-top: 1px solid var(--rule);
+        border-left: 1px solid var(--rule);
+        border-right: 1px solid var(--rule);
+        height: clamp(6px, 0.9vh, 10px);
+      }
+      .brkl {
+        grid-row: 4;
+        justify-self: center;
+        margin-top: clamp(3px, 0.5vh, 6px);
+      }
+
+      .verdict {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: clamp(20px, 3vw, 56px);
+        flex-wrap: wrap;
+      }
+      .clockout {
+        text-align: right;
+      }
+      .clockout .t {
+        font-family: var(--display);
+        font-variation-settings: 'wdth' 125, 'wght' 500;
+        font-variant-numeric: tabular-nums;
+        font-size: clamp(2rem, min(3.6vw, 6.2vh), 4rem);
+        line-height: 0.88;
+        color: var(--breach);
+        display: block;
+        opacity: 0;
+        transition: opacity 420ms var(--ease);
+      }
+      .clockout.show .t {
+        opacity: 1;
+      }
+      .clockout .lbl {
+        margin-top: 0.7em;
+        opacity: 0;
+        transition: opacity 420ms var(--ease) 90ms;
+      }
+      .clockout.show .lbl {
+        opacity: 1;
+      }
+      /* teal appears exactly once in the deck, on the state it names */
+      .suppressed {
+        font-family: var(--mono);
+        font-weight: 400;
+        font-size: clamp(10px, 0.8vw, 14px);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--clear);
+        opacity: 0;
+        transition: opacity 420ms var(--ease) 180ms;
+      }
+      .suppressed.show {
+        opacity: 1;
+      }
+      .suppressed span {
+        color: var(--ink-ghost);
+      }
+
+      /* ── reduced motion: every animation resolves to its final state ──── */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 1ms !important;
+          animation-delay: 0ms !important;
+          transition-duration: 1ms !important;
+          transition-delay: 0ms !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header class="hud hud--top">
+      <div class="wordmark">HOPPER</div>
+      <div class="lbl" id="chapter"></div>
+    </header>
+
+    <!-- ═══ 1 — THE VOLUME ═════════════════════════════════════════════ -->
+    <section class="slide" data-n="1">
+      <div class="field">
+        <div class="eyebrow">
+          <span class="lbl">Disclosed vulnerabilities · H1 2026</span>
+          <span class="rule"></span>
+          <span class="lbl">400 marks · 1 confirmed</span>
+        </div>
+        <div class="ticks" id="ticks">
+          <div class="real-note">
+            <span class="v">85</span>
+            <span class="lbl">Confirmed exploited · 0.24%</span>
+          </div>
+        </div>
+      </div>
+      <div class="datum"><span>n = 35,364</span></div>
+      <div class="readout">
+        <div class="stats">
+          <div class="stat">
+            <span class="num">35,364</span>
+            <span class="lbl">CVEs published, H1 2026</span>
+          </div>
+          <div class="stat">
+            <span class="num">7.4</span>
+            <span class="lbl">Minutes between them</span>
+          </div>
+          <div class="stat">
+            <span class="num">+49.5%</span>
+            <span class="lbl">Year over year</span>
+          </div>
+        </div>
+        <div class="lands">
+          <div>
+            <p>Out of 400 alerts, 1 is real.</p>
+            <p>Teams read all 400 by hand.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 2 — THE SORTING STOPPED ════════════════════════════════════ -->
+    <section class="slide" data-n="2">
+      <div class="field">
+        <div class="eyebrow">
+          <span class="lbl">NVD enrichment · severity scoring</span>
+          <span class="rule"></span>
+        </div>
+        <div>
+        <div class="enrich">
+          <div class="solid"></div>
+          <div class="stop"></div>
+          <div class="dashed"></div>
+        </div>
+        <div class="enrich-tags">
+          <div class="a">
+            <span class="lbl">Scored since 2005</span>
+          </div>
+          <div class="b">
+            <div>
+              <span class="k">15 APR 2026</span>
+              <span class="lbl">NIST moves NVD to triage</span>
+            </div>
+            <div>
+              <span class="k">~29,000</span>
+              <span class="lbl">Marked “Not Scheduled”</span>
+            </div>
+            <div>
+              <span class="k q">15–20%</span>
+              <span class="lbl">Of new CVEs enriched</span>
+            </div>
+          </div>
+        </div>
+        </div>
+      </div>
+      <div class="datum"><span>Scale · all vulnerable packages</span></div>
+      <div class="readout">
+        <div class="measures">
+          <span class="lbl">You installed it</span>
+          <div class="track"><div class="fill direct" style="width: 5%"></div></div>
+          <span class="v">5%</span>
+
+          <span class="lbl">It arrived through another package</span>
+          <div class="track">
+            <div class="fill transitive" style="width: 95%"></div>
+          </div>
+          <span class="v">95%</span>
+
+          <span class="lbl">Actually reachable in your code</span>
+          <div class="track"><div class="fill" style="width: 9.5%"></div></div>
+          <span class="v">&lt;9.5%</span>
+        </div>
+        <div class="lands">
+          <div>
+            <p>The bug isn’t in the library you chose.</p>
+            <p>It’s in the library your library used.</p>
+            <p>Your scanner doesn’t look that deep.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 3 — THE TWO CLOCKS ═════════════════════════════════════════ -->
+    <section class="slide" data-n="3">
+      <div class="field">
+        <div class="eyebrow">
+          <span class="lbl">Drawn to scale · dashed outline is the prior value</span>
+          <span class="rule"></span>
+          <span class="lbl">252 days = full width</span>
+        </div>
+        <div class="clocks">
+          <span class="lbl">Attacker exploits in</span>
+          <div class="bar">
+            <div class="was" style="width: 12.7%"></div>
+            <div class="now" style="width: 1.98%"></div>
+          </div>
+          <div class="cap">
+            <span class="v">5 days</span>
+            <span class="lbl">Was 32 — shrinking</span>
+          </div>
+
+          <span class="lbl">You patch in</span>
+          <div class="bar">
+            <div class="was" style="width: 67.86%"></div>
+            <div class="now flight" style="width: 100%"></div>
+          </div>
+          <div class="cap">
+            <span class="v flight">252 days</span>
+            <span class="lbl">Was 171 — growing</span>
+          </div>
+        </div>
+      </div>
+      <div class="datum"><span>Below the line · what nothing measures</span></div>
+      <div class="readout">
+        <div class="clocks">
+          <span class="lbl">You must notify in</span>
+          <div class="bar obligation">
+            <div class="now" style="width: 0.066%"></div>
+          </div>
+          <div class="cap">
+            <span class="v risk">4 hours</span>
+            <span class="lbl">0.07% of the bar above</span>
+          </div>
+        </div>
+        <div class="regimes">
+          <div><span class="k">DORA</span><span class="lbl">4 hours</span></div>
+          <div><span class="k">NIS2</span><span class="lbl">24 hours</span></div>
+          <div><span class="k">GDPR</span><span class="lbl">72 hours</span></div>
+          <div><span class="k">SEC</span><span class="lbl">4 business days</span></div>
+        </div>
+        <div class="lands">
+          <div>
+            <p>You have 252 days to fix it — but only 4 hours to tell your customer.</p>
+            <p>No tool tracks that.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 4 — WHY NOTIFICATION IS THE PRODUCT ════════════════════════ -->
+    <section class="slide" data-n="4">
+      <div class="field">
+        <div class="eyebrow">
+          <span class="lbl">MOVEit · June 2023 · CVE-2023-34362 · SQL injection</span>
+          <span class="rule"></span>
+          <span class="lbl">Cl0p exploited it before most teams read the advisory</span>
+        </div>
+        <div>
+        <div class="chain4">
+          <div class="n4 hit">
+            <span class="k">MOVEit</span><span class="lbl">Progress Software</span>
+          </div>
+          <div class="link4"></div>
+          <div class="n4 hit">
+            <span class="k">Zellis</span><span class="lbl">Payroll processor</span>
+          </div>
+          <div class="link4"></div>
+          <div class="fan">
+            <div class="leaf">British Airways</div>
+            <div class="leaf">BBC</div>
+            <div class="leaf">Boots</div>
+          </div>
+          <div class="link4"></div>
+          <div class="outcome">Salary and bank details</div>
+        </div>
+        <div class="never">
+          None of the three installed MOVEit. They were told because Zellis was
+          contractually obligated to tell them — and
+          <b>Zellis’s clock started the moment Zellis knew</b>, not when they
+          finished fixing.
+        </div>
+        </div>
+      </div>
+      <div class="datum"><span>The delay version</span></div>
+      <div class="readout">
+        <div class="equifax">
+          <span class="lbl">Equifax · 2017 · CVE-2017-5638 · Apache Struts</span>
+          <div class="eqline">
+            <span class="m">MAR <b>patch available, day of disclosure</b></span>
+            <span class="sep"></span>
+            <span class="m">MAY <b>attackers inside</b></span>
+            <span class="sep"></span>
+            <span class="m">JUL <b>noticed</b></span>
+            <span class="sep"></span>
+            <span class="m">SEP <b>disclosed</b></span>
+          </div>
+          <div class="eqline">
+            <span class="m risk">~6 months <b>patch to notification</b></span>
+            <span class="m">·</span>
+            <span class="m"><b>147M</b> people</span>
+            <span class="m">·</span>
+            <span class="m">settlement <b>north of $700M</b></span>
+            <span class="sep"></span>
+          </div>
+        </div>
+        <div class="lands">
+          <div>
+            <p>The vulnerability wasn’t the failure. The traversal was.</p>
+            <p>If you sell software to businesses, you are Zellis.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 5 — WHAT HOPPER DOES ═══════════════════════════════════════ -->
+    <section class="slide" data-n="5">
+      <div class="field">
+        <div class="eyebrow">
+          <span class="lbl">Live traversal · one hop every 300 ms</span>
+          <span class="rule"></span>
+          <span class="lbl">Four systems, one path</span>
+        </div>
+        <div class="trav" id="trav">
+          <!-- dots -->
+          <div class="dot" style="grid-column: 1" data-dot="0"></div>
+          <div class="dot" style="grid-column: 3" data-dot="1"></div>
+          <div class="dot" style="grid-column: 5" data-dot="2"></div>
+          <div class="dot" style="grid-column: 7" data-dot="3"></div>
+          <div class="dot" style="grid-column: 9" data-dot="4"></div>
+          <div class="dot" style="grid-column: 11" data-dot="5"></div>
+          <div class="dot" style="grid-column: 13" data-dot="6"></div>
+          <!-- segments -->
+          <div class="seg" style="grid-column: 2" data-seg="0"></div>
+          <div class="seg" style="grid-column: 4" data-seg="1"></div>
+          <div class="seg" style="grid-column: 6" data-seg="2"></div>
+          <div class="seg" style="grid-column: 8" data-seg="3"></div>
+          <div class="seg" style="grid-column: 10" data-seg="4"></div>
+          <div class="seg" style="grid-column: 12" data-seg="5"></div>
+          <!-- labels -->
+          <div class="nlbl" style="grid-column: 1" data-lbl="0">brace-expansion</div>
+          <div class="nlbl" style="grid-column: 3" data-lbl="1">minimatch</div>
+          <div class="nlbl" style="grid-column: 5" data-lbl="2">glob</div>
+          <div class="nlbl" style="grid-column: 7" data-lbl="3">jest</div>
+          <div class="nlbl" style="grid-column: 9" data-lbl="4">build-api</div>
+          <div class="nlbl" style="grid-column: 11" data-lbl="5">Northwind Systems</div>
+          <div class="nlbl" style="grid-column: 13" data-lbl="6">§7.3</div>
+          <!-- source-system brackets -->
+          <div class="brk" style="grid-column: 1 / 8"></div>
+          <div class="brk" style="grid-column: 9 / 10"></div>
+          <div class="brk" style="grid-column: 11 / 12"></div>
+          <div class="brk" style="grid-column: 13 / 14"></div>
+          <div class="lbl brkl" style="grid-column: 1 / 8">SBOM</div>
+          <div class="lbl brkl" style="grid-column: 9 / 10">Catalog</div>
+          <div class="lbl brkl" style="grid-column: 11 / 12">CRM</div>
+          <div class="lbl brkl" style="grid-column: 13 / 14">Legal</div>
+        </div>
+      </div>
+      <div class="datum left"><span>7 hops · 4 systems · 1 obligation</span></div>
+      <div class="readout">
+        <div class="verdict">
+          <!-- the counterweight: the same instrument, the other verdict, and a
+               callback to the 400 marks on slide 1 -->
+          <div class="suppressed" id="supp">
+            The other 399 tonight <span>·</span> Suppressed <span>·</span> zero hops
+          </div>
+          <div class="clockout" id="clockout">
+            <span class="t" id="clock">T−23:59:41</span>
+            <span class="lbl">Notification deadline · Northwind §7.3</span>
+          </div>
+        </div>
+        <div class="lands">
+          <div>
+            <p>
+              Every tool says this package is broken. None can say it will breach a
+              contract by 6pm.
+            </p>
+            <p>We connect the dots between them.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="hud hud--bot">
+      <div class="lbl" id="source"></div>
+      <div class="counter" id="counter">
+        <i></i><i></i><i></i><i></i><i></i>
+        <b><em id="cn">01</em> / 05</b>
+      </div>
+    </footer>
+
+    <script>
+      (function () {
+        'use strict';
+
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+        var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+        var marks = Array.prototype.slice.call(
+          document.querySelectorAll('#counter i')
+        );
+        var chapter = document.getElementById('chapter');
+        var source = document.getElementById('source');
+        var cn = document.getElementById('cn');
+        var current = 0;
+
+        var CHAPTERS = [
+          'The volume',
+          'The sorting stopped',
+          'The two clocks',
+          'Why notification is the product',
+          'What Hopper does'
+        ];
+        var SOURCES = [
+          'Source · NVD publication counts, H1 2026 · confirmed-exploitation set',
+          'Source · NIST NVD programme notice, 15 April 2026 · ecosystem dependency analysis',
+          'Source · time-to-exploit and time-to-patch industry medians · DORA, NIS2, GDPR, SEC disclosure rule',
+          'Source · CVE-2023-34362 · CVE-2017-5638 · Equifax consumer settlement, 2019',
+          'Source · HOPPER · graph traversal over SBOM, service catalogue, CRM and contract corpus'
+        ];
+
+        /* ── slide 1: 400 marks, one of them real ──────────────────────── */
+        var ticks = document.getElementById('ticks');
+        var REAL = 378; /* last row, column 29 — it can cross the datum there */
+        var frag = document.createDocumentFragment();
+        for (var i = 0; i < 400; i++) {
+          var t = document.createElement('i');
+          if (i === REAL) t.className = 'real';
+          else t.style.animationDelay = (i * 1.9).toFixed(0) + 'ms';
+          frag.appendChild(t);
+        }
+        ticks.insertBefore(frag, ticks.firstChild);
+
+        /* ── slide 5: the traversal ────────────────────────────────────── */
+        var HOP = 300; /* HOP_INTERVAL_MS */
+        var trav = document.getElementById('trav');
+        var dots = Array.prototype.slice.call(trav.querySelectorAll('.dot'));
+        var segs = Array.prototype.slice.call(trav.querySelectorAll('.seg'));
+        var nlbls = Array.prototype.slice.call(trav.querySelectorAll('.nlbl'));
+        var clockout = document.getElementById('clockout');
+        var clockEl = document.getElementById('clock');
+        var supp = document.getElementById('supp');
+        var timers = [];
+        var ticker = null;
+        var remaining = 23 * 3600 + 59 * 60 + 41;
+
+        function pad(n) {
+          return (n < 10 ? '0' : '') + n;
+        }
+        function paint() {
+          var s = remaining < 0 ? 0 : remaining;
+          clockEl.textContent =
+            'T−' +
+            pad(Math.floor(s / 3600)) +
+            ':' +
+            pad(Math.floor((s % 3600) / 60)) +
+            ':' +
+            pad(s % 60);
+        }
+
+        function resetTraversal() {
+          timers.forEach(clearTimeout);
+          timers = [];
+          if (ticker) {
+            clearInterval(ticker);
+            ticker = null;
+          }
+          dots.forEach(function (d) {
+            d.className = 'dot';
+          });
+          segs.forEach(function (s) {
+            s.className = 'seg';
+          });
+          nlbls.forEach(function (l) {
+            l.className = 'nlbl';
+          });
+          clockout.classList.remove('show');
+          supp.classList.remove('show');
+          remaining = 23 * 3600 + 59 * 60 + 41;
+          paint();
+        }
+
+        function land() {
+          var last = dots.length - 1;
+          dots[last].className = 'dot land';
+          nlbls[last].className = 'nlbl land';
+          clockout.classList.add('show');
+          supp.classList.add('show');
+        }
+
+        /* Replayed on every entry to slide 5, so it can be shown twice. */
+        function runTraversal() {
+          resetTraversal();
+
+          if (reduced.matches) {
+            /* final state still reads: the whole path lit, the clause breached */
+            dots.forEach(function (d, i) {
+              d.className = i === dots.length - 1 ? 'dot land' : 'dot lit';
+            });
+            segs.forEach(function (s) {
+              s.className = 'seg lit';
+            });
+            nlbls.forEach(function (l, i) {
+              l.className = i === nlbls.length - 1 ? 'nlbl land' : 'nlbl lit';
+            });
+            clockout.classList.add('show');
+            supp.classList.add('show');
+            paint();
+            return;
+          }
+
+          dots.forEach(function (dot, i) {
+            timers.push(
+              setTimeout(function () {
+                if (i > 0) segs[i - 1].classList.add('lit');
+                dots.forEach(function (d) {
+                  d.classList.remove('head');
+                });
+                if (i < dots.length - 1) {
+                  dot.className = 'dot lit head';
+                  nlbls[i].className = 'nlbl lit';
+                } else {
+                  land();
+                }
+              }, i * HOP)
+            );
+          });
+
+          timers.push(
+            setTimeout(function () {
+              ticker = setInterval(function () {
+                remaining -= 1;
+                paint();
+              }, 1000);
+            }, dots.length * HOP + 400)
+          );
+        }
+
+        /* ── navigation ────────────────────────────────────────────────── */
+        function show(n, force) {
+          n = Math.max(0, Math.min(slides.length - 1, n));
+          if (n === current && !force) return;
+          slides[current].classList.remove('on');
+          current = n;
+          slides[current].classList.add('on');
+
+          chapter.innerHTML =
+            '<b>' + String(n + 1).padStart(2, '0') + '</b> &nbsp;' + CHAPTERS[n];
+          source.textContent = SOURCES[n];
+          cn.textContent = String(n + 1).padStart(2, '0');
+          marks.forEach(function (m, i) {
+            m.classList.toggle('on', i === n);
+          });
+
+          if (n === 4) runTraversal();
+          else resetTraversal();
+        }
+
+        function next() {
+          show(current + 1);
+        }
+        function prev() {
+          show(current - 1);
+        }
+
+        document.addEventListener('keydown', function (e) {
+          if (e.metaKey || e.ctrlKey || e.altKey) return;
+          var k = e.key;
+          if (k === 'ArrowRight' || k === ' ' || k === 'PageDown' || k === 'Enter') {
+            e.preventDefault();
+            next();
+          } else if (k === 'ArrowLeft' || k === 'PageUp' || k === 'Backspace') {
+            e.preventDefault();
+            prev();
+          } else if (k === 'Home') {
+            e.preventDefault();
+            show(0);
+          } else if (k === 'End') {
+            e.preventDefault();
+            show(slides.length - 1);
+          } else if (k >= '1' && k <= '5') {
+            e.preventDefault();
+            show(parseInt(k, 10) - 1, true);
+          } else if (k === 'f' || k === 'F') {
+            e.preventDefault();
+            if (document.fullscreenElement) document.exitFullscreen();
+            else if (document.documentElement.requestFullscreen)
+              document.documentElement.requestFullscreen();
+          }
+        });
+
+        document.addEventListener('click', function () {
+          next();
+        });
+
+        /* a projector changes resolution under the running page. Layout is
+           pure CSS (clamp + flex + grid), so nothing needs re-measuring — but
+           slide 5's timed sequence is re-seated so a mid-run resize cannot
+           leave the chain half-lit. */
+        var rt = null;
+        window.addEventListener('resize', function () {
+          if (current !== 4) return;
+          clearTimeout(rt);
+          rt = setTimeout(function () {
+            runTraversal();
+          }, 180);
+        });
+
+        paint();
+        show(0, true);
+      })();
+    </script>
+  </body>
+</html>
