@@ -43,9 +43,13 @@ function rowClass(r: Row): string {
   return '';
 }
 
-function busTime(i: number): string {
-  return String(i + 1).padStart(2, '0');
-}
+/** fixed-width agent tags keep the bus reading like a tape, not a chat log */
+const BUS_TAG: Record<string, string> = {
+  reachability: 'REACH',
+  'patch-engineer': 'PATCH',
+  'obligation-officer': 'OBLIG',
+  arbiter: 'ARBIT',
+};
 
 function Transcript({ events }: { events: AgentBusEvent[] }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -63,7 +67,7 @@ function Transcript({ events }: { events: AgentBusEvent[] }) {
           className={`transcript-line is-${e.phase}`}
         >
           <span className="transcript-agent">
-            {busTime(i)} {e.agent.slice(0, 8)}
+            {String(i + 1).padStart(2, '0')} {BUS_TAG[e.agent] ?? e.agent}
           </span>
           <span className="transcript-msg">
             {e.message}

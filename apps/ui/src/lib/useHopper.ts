@@ -182,8 +182,12 @@ export function useHopper(): Hopper {
   const autoplayed = useRef(false);
   useEffect(() => {
     if (mode !== 'replay' || autoplayed.current) return undefined;
-    autoplayed.current = true;
-    const t = window.setTimeout(() => runBeat(1), 700);
+    // the flag is set when the timer fires, not when it is scheduled — a
+    // cleanup (StrictMode's double-invoke, a mode flip) must not eat the beat
+    const t = window.setTimeout(() => {
+      autoplayed.current = true;
+      runBeat(1);
+    }, 700);
     return () => window.clearTimeout(t);
   }, [mode, runBeat]);
 

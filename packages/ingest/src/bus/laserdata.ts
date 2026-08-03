@@ -46,6 +46,41 @@ class LaserTimeout extends Error {
   }
 }
 
+/**
+ * TCP pre-flight. An abandoned Laser.connect() keeps retrying in the
+ * background and holds the event loop open, so a bad LASER_URL must never
+ * reach the SDK at all. Connection strings look like
+ * `iggy://user:pass@host:port` (scheme and credentials both optional), and
+ * Iggy's TCP port defaults to 8090.
+ */
+export function parseEndpoint(connectionString: string): { host: string; port: number } | null {
+  const trimmed = connectionString.trim().replace(/^iggy(\+\w+)?:\/\//i, '');
+  const authority = trimmed.includes('@') ? trimmed.slice(trimmed.lastIndexOf('@') + 1) : trimmed;
+  const bare = authority.split('/')[0];
+  if (!bare) return null;
+  const idx = bare.lastIndexOf(':');
+  const host = idx > 0 ? bare.slice(0, idx) : bare;
+  const port = idx > 0 ? Number(bare.slice(idx + 1)) : 8090;
+  if (!host || !Number.isInteger(port) || port <= 0 || port > 65535) return null;
+  return { host, port };
+}
+
+async function probeEndpoint(host: string, port: number, ms: number): Promise<void> {
+  const net = await import('node:net');
+  await new Promise<void>((resolve, reject) => {
+    const socket = net.connect({ host, port });
+    const done = (err?: Error): void => {
+      socket.removeAllListeners();
+      socket.destroy();
+      if (err) reject(err);
+      else resolve();
+    };
+    socket.setTimeout(ms, () => done(new Error(`tcp ${host}:${port} did not answer in ${ms}ms`)));
+    socket.once('connect', () => done());
+    socket.once('error', (err: Error) => done(err));
+  });
+}
+
 function withTimeout<T>(op: string, ms: number, work: Promise<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new LaserTimeout(op, ms)), ms);
@@ -128,12 +163,33 @@ export class LaserDataBus implements EventBusPort, BusInternals {
   async connect(): Promise<void> {
     await this.local.connect();
     try {
+      const endpoint = parseEndpoint(this.url);
+      if (!endpoint) throw new Error(`LASER_URL is not a connection string: "${this.url}"`);
+      await probeEndpoint(endpoint.host, endpoint.port, CONNECT_TIMEOUT_MS);
+
       const mod = (await withTimeout(
         'import',
         CONNECT_TIMEOUT_MS,
         import('@laserdata/laser-sdk'),
       )) as unknown as { Laser: { connect(url: string): Promise<LaserLike> } };
-      const laser = await withTimeout('Laser.connect', CONNECT_TIMEOUT_MS, mod.Laser.connect(this.url));
+
+      // Keep the promise: if the connect outlives our budget we abandon the
+      // await, but the SDK keeps the socket. Salvage it the moment it settles.
+      //
+      // Known limitation of laser-sdk 0.0.1: if LASER_URL points at a port that
+      // accepts TCP but does not speak Iggy, connect() never settles and its
+      // socket keeps the event loop open. Behaviour is still correct (we
+      // degrade to local and the demo is unaffected) but a CLI will not exit.
+      // The two realistic failure modes — bad host and nothing listening — are
+      // caught by the pre-flight above and exit cleanly.
+      const attempt = mod.Laser.connect(this.url);
+      attempt.then(
+        (late) => {
+          if (this.degraded) void late.close().catch(() => undefined);
+        },
+        () => undefined,
+      );
+      const laser = await withTimeout('Laser.connect', CONNECT_TIMEOUT_MS, attempt);
       this.client = laser;
       const stream = laser.stream(STREAM);
       for (const t of TOPICS) {

@@ -31,7 +31,7 @@ export function ObligationClock({ tick }: { tick: ClockTick | null }) {
           {tick ? tick.customer.toUpperCase() : 'NO OPEN OBLIGATION'}
         </div>
         <div className={`clock-face display${urgent ? ' is-urgent' : ''}${tick ? '' : ' is-idle'}`}>
-          {tick ? fmtCountdown(tick.remaining_seconds) : 'T-——:——:——'}
+          {tick ? fmtCountdown(tick.remaining_seconds) : 'STANDING BY'}
         </div>
         <div className="clock-sub">
           <span>

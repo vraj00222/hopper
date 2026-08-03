@@ -115,7 +115,7 @@ const SEL_HERO: Selection = {
   success_rate: 0.94,
   avg_latency: 1810,
   advisory_class: HERO_CLASS.id,
-  reason: `HANDLES ${HERO_CLASS.id} · best success_rate over 186 runs`,
+  reason: 'HANDLES this class · best success_rate over 186 runs',
 };
 
 const SEL_SUPPRESSED: Selection = {
@@ -124,7 +124,7 @@ const SEL_SUPPRESSED: Selection = {
   success_rate: 0.99,
   avg_latency: 240,
   advisory_class: SUPPRESSED_CLASS.id,
-  reason: `HANDLES ${SUPPRESSED_CLASS.id} · short-circuits on zero paths`,
+  reason: 'HANDLES this class · short-circuits the moment paths = 0',
 };
 
 /** the meta reveal — a different pipeline, chosen by the graph, on stage */
@@ -134,7 +134,7 @@ const SEL_PRECEDENT: Selection = {
   success_rate: 0.97,
   avg_latency: 1420,
   advisory_class: PRECEDENT_CLASS.id,
-  reason: `HANDLES ${PRECEDENT_CLASS.id} · OUTPERFORMED pipeline#2 by 0.03 — graph re-selected`,
+  reason: 'OUTPERFORMED pipeline#2 by 0.03 on this class — the graph re-selected',
 };
 
 export const SELECTIONS = { hero: SEL_HERO, suppressed: SEL_SUPPRESSED, precedent: SEL_PRECEDENT };

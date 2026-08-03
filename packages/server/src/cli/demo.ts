@@ -22,7 +22,8 @@ for (const r of results) {
   } else {
     const best = [...run.hop_paths].sort((a, b) => a.notice_window - b.notice_window)[0];
     if (best) {
-      console.log(`  ${best.chain.join(' -> ')} -> ${best.clause_ref}`);
+      // the chain already terminates at the clause; do not append it twice
+      console.log(`  ${best.chain.join(' -> ')}`);
       console.log(
         `  ${best.hops} hops · ${best.customer} · ${best.notice_window}h window · ${best.governing_law}`,
       );

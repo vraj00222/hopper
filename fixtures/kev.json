@@ -1,10 +1,18 @@
 {
-  "catalogVersion": "2026.07.29",
-  "dateReleased": "2026-07-29T18:45:59.5809Z",
-  "count": 1656,
-  "fetched_at": "2026-08-03T18:47:38.213Z",
+  "catalogVersion": "2026.08.03",
+  "dateReleased": "2026-08-03T18:43:10.8574Z",
+  "count": 1657,
+  "fetched_at": "2026-08-03T19:02:23.230Z",
   "origin": "cisa",
   "cves": [
+    {
+      "cveID": "CVE-2026-18577",
+      "vendorProject": "N-able",
+      "product": "N-central",
+      "vulnerabilityName": "N-able N-central Authentication Bypass Using an Alternate Path or Channel Vulnerability",
+      "dateAdded": "2026-08-03",
+      "knownRansomwareCampaignUse": false
+    },
     {
       "cveID": "CVE-2026-20316",
       "vendorProject": "Cisco",
