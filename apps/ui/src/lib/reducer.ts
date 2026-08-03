@@ -371,6 +371,64 @@ export function splitReceipts(
  * carries repo, service, customer and clause nodes on top of the dependency
  * edges, so `chain.length` and `hops` legitimately disagree (10 vs 6).
  */
+/**
+ * The trace to draw.
+ *
+ * A live arc usually completes before anyone opens the browser, and presenters
+ * refresh mid-demo, so there is often no `hop` stream to animate. In that case
+ * the trace is reconstructed at rest from the contract — the chain that was
+ * walked, already arrived — rather than leaving the signature element blank.
+ */
+export function traceWave(ui: UiState): HopWave | null {
+  const focus = ui.app.focus;
+  const live = ui.wave;
+  if (live && (!focus?.advisory || live.ghsa_id === focus.advisory.ghsa_id)) return live;
+  if (!focus?.advisory) return live;
+
+  const chain = focus.hop_paths?.[0]?.chain;
+  if (chain && chain.length > 0) {
+    return {
+      ghsa_id: focus.advisory.ghsa_id,
+      total: chain.length,
+      chain: chain.slice(),
+      arrived: chain.length,
+      suppressed: false,
+      terminal: true,
+      nonce: 0,
+    };
+  }
+
+  const absence = focus.absence;
+  if (absence && absence.paths === 0) {
+    return {
+      ghsa_id: focus.advisory.ghsa_id,
+      total: 2,
+      chain: [absence.package, '∅'],
+      arrived: 2,
+      suppressed: true,
+      terminal: false,
+      nonce: 0,
+    };
+  }
+  return live;
+}
+
+/** the pipeline the graph picked, from a `pipeline` push or the latest run */
+export function currentSelection(ui: UiState): Selection | null {
+  if (ui.selection) return ui.selection;
+  const run = ui.app.runs[0];
+  if (!run) return null;
+  const spec = ui.app.pipelines.find((p) => p.pipeline_id === run.pipeline_id);
+  return {
+    pipeline_id: run.pipeline_id,
+    name: spec?.name ?? run.pipeline_id,
+    success_rate: spec?.success_rate ?? 0,
+    avg_latency: spec?.avg_latency ?? run.latency_ms,
+    advisory_class: run.advisory_class,
+    reason: run.selection_reason,
+  };
+}
+
 export function hopCountFor(ui: UiState, ghsaId?: string): number | null {
   const focus = ui.app.focus;
   const id = ghsaId ?? ui.wave?.ghsa_id ?? focus?.advisory?.ghsa_id;

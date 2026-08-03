@@ -58,9 +58,18 @@ export function ConsequencePanel({
     ? Math.min(1, Math.max(0, 1 - clock.remaining_seconds / Math.max(1, clock.window_hours * 3600)))
     : 0;
 
+  // the same person paged twice by two runs is one consequence, not two
+  const seen = new Set<string>();
+  const unique = executed.filter((r) => {
+    const key = `${r.action}::${r.detail}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
   // remediation first, the human second, the obligation last — the order in
   // which these actually happen
-  const ordered = [...executed].sort(
+  const ordered = [...unique].sort(
     (a, b) => (a.action === 'page_oncall' ? 1 : 0) - (b.action === 'page_oncall' ? 1 : 0),
   );
 

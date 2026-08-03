@@ -3,6 +3,9 @@ import type { Mode } from '../lib/types.js';
 
 const n = (v: number) => v.toLocaleString('en-US');
 
+/** the marketing surface lives in its own workspace on 5174 */
+const SITE_URL = 'http://localhost:5174';
+
 /**
  * The status word is the honest one: `live` only when a websocket is actually
  * open. Replaying the fixture says so.
@@ -35,15 +38,17 @@ export function Header({ status, graph, mode }: {
         <span>
           {n(graph.nodes)} nodes / {n(graph.edges)} edges
         </span>
-        <span className="sep">·</span>
-        <span>{n(graph.chokepoints)} chokepoints</span>
       </div>
       <nav className="vendor-links">
         <a className="vlink" href={status.falkor_ui} target="_blank" rel="noreferrer">
-          FalkorDB browser &#9656;
+          FalkorDB &#9656;
         </a>
         <a className="vlink" href={status.rocketride_trace} target="_blank" rel="noreferrer">
-          RocketRide trace &#9656;
+          RocketRide &#9656;
+        </a>
+        {/* the operator already knows what Hopper is; this is just a way out */}
+        <a className="vlink" href={SITE_URL} target="_blank" rel="noreferrer">
+          Overview &#9656;
         </a>
       </nav>
     </header>

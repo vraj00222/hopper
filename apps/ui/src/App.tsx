@@ -22,9 +22,9 @@ import { GatePanel } from './components/GatePanel.js';
 import { Header } from './components/Header.js';
 import { HopPathViz, HopVerdict } from './components/HopPathViz.js';
 import { PipelineStrip } from './components/PipelineStrip.js';
-import { hopCountFor, primaryClock, splitReceipts } from './lib/reducer.js';
+import { currentSelection, hopCountFor, primaryClock, splitReceipts, traceWave } from './lib/reducer.js';
 import { useHopper } from './lib/useHopper.js';
-import type { UiState } from './lib/types.js';
+import type { HopWave, UiState } from './lib/types.js';
 
 /** clicking a demo advisory in the feed re-runs its beat */
 const BEAT_BY_GHSA = new Map<string, number>([
@@ -132,8 +132,7 @@ function AdvisoryHead({
  * carries repo, service, customer and clause nodes on top of the dependency
  * edges, so 10 rings and 6 hops is correct rather than a contradiction.
  */
-function hopDisplay(ui: UiState, hops: number | null): { value: string; tone: string } {
-  const wave = ui.wave;
+function hopDisplay(wave: HopWave | null, hops: number | null): { value: string; tone: string } {
   if (wave?.suppressed || hops === 0) return { value: '0', tone: 'is-clear' };
   if (hops === null) return { value: '—', tone: 'is-idle' };
   if (!wave) return { value: String(hops), tone: '' };
@@ -143,12 +142,14 @@ function hopDisplay(ui: UiState, hops: number | null): { value: string; tone: st
 
 export function App() {
   const { ui, mode, activeBeat, playedBeats, send, runBeat, reset, reducedMotion } = useHopper();
-  const { app, wave, selection, prev_selection } = ui;
+  const { app, prev_selection } = ui;
+  const wave = traceWave(ui);
+  const selection = currentSelection(ui);
   const focus = app.focus;
   const clock = primaryClock(ui);
   const act = currentAct(ui);
   const { executed } = splitReceipts(app.receipts, app.approvals);
-  const count = hopDisplay(ui, hopCountFor(ui));
+  const count = hopDisplay(wave, hopCountFor(ui));
 
   return (
     <div className={`shell${reducedMotion ? ' no-motion' : ''}`} data-stage={act}>

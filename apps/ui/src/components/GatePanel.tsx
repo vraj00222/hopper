@@ -71,7 +71,9 @@ export function GatePanel({
         <div className="empty">nothing is waiting on a person</div>
       )}
 
-      {pending.map((a) => (
+      {/* one signature at a time — a queue of identical gates is noise, and the
+          operator can only sign the one in front of them anyway */}
+      {pending.slice(0, 1).map((a) => (
         <div key={a.id}>
           <div className="gate-caption">Guild gate · no token until a human signs</div>
           <div className="gate-row">
@@ -85,6 +87,9 @@ export function GatePanel({
           </div>
         </div>
       ))}
+      {pending.length > 1 && (
+        <div className="gate-queue">{pending.length - 1} more waiting behind this one</div>
+      )}
 
       {signedReceipts.map((r) => (
         <div key={`signed-${r.ref}`}>

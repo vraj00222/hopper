@@ -29,8 +29,8 @@
 
   /* staging levels */
   --lit-now: 1;
-  --lit-past: 0.56;
-  --lit-future: 0.2;
+  --lit-past: 0.88;
+  --lit-future: 0.3;
 
   --ease: cubic-bezier(0.16, 0.72, 0.24, 1);
   --pad: 15px 20px;
@@ -103,7 +103,11 @@ body {
   border-right: 1px solid var(--rule);
 }
 
-.col-right { display: grid; grid-template-rows: minmax(0, 1fr) auto auto; min-height: 0; }
+.col-right {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) minmax(0, auto) minmax(0, auto) auto;
+  min-height: 0;
+}
 
 .panel {
   min-height: 0;
@@ -112,6 +116,7 @@ body {
   padding: var(--pad);
   border-bottom: 1px solid var(--rule);
   position: relative;
+  overflow: hidden;
 }
 .panel:last-child { border-bottom: 0; }
 
@@ -141,7 +146,7 @@ body {
 .panel.is-clear[data-lit='now']::before { background: var(--clear); }
 
 /* the gate takes the room: everything else recedes to near-dark */
-.shell[data-stage='gate'] [data-lit]:not(.is-gate) { opacity: 0.24; }
+.shell[data-stage='gate'] [data-lit]:not(.is-gate) { opacity: 0.58; }
 .shell[data-stage='gate'] .is-gate { opacity: 1; }
 
 .panel-head {
@@ -562,6 +567,7 @@ body {
 
 /* ── act 4 · the gate ───────────────────────────────────────────────────── */
 
+.gate-stack { min-height: 0; overflow-y: auto; }
 .gate-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; }
 .gate-title { font-size: 13.5px; color: var(--paper); letter-spacing: -0.005em; }
 .gate-body {
