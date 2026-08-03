@@ -5,36 +5,28 @@
  * arrive at a contract clause — amber while it propagates, oxide when it lands
  * on the clause. On suppression the wave dies at hop 2 and the whole trace
  * turns teal. Hand-rolled SVG; honours prefers-reduced-motion; re-playable.
+ *
+ * Geometry is computed from the chain length (see layoutTrace), because a
+ * fixture chain is 7 nodes and real graph data is 10 or more. Nothing here may
+ * ever escape the panel and land on the agents column.
  */
 import type { FocusView } from '@hopper/contracts';
+import { fitLabel, layoutTrace, ordinalsAreHops } from '../lib/hops.js';
 import type { HopWave } from '../lib/types.js';
 
-const VB_W = 1000;
-const VB_H = 190;
-const PAD = 70;
-/** slot pitch is fixed at the 7-node layout, so a shallower path draws a
- *  visibly shorter trace instead of stretching to fill the panel */
-const PITCH = (VB_W - PAD * 2) / 6;
-const CY = 96;
-const R = 11;
-
-function x(i: number): number {
-  return PAD + i * PITCH;
-}
-
-function indexLabel(i: number, total: number, suppressed: boolean): string {
+function indexLabel(i: number, total: number, suppressed: boolean, numbered: boolean): string {
   if (i === 0) return 'PKG';
   if (!suppressed && i === total - 1) return 'CLAUSE';
-  return String(i).padStart(2, '0');
+  return numbered ? String(i).padStart(2, '0') : '';
 }
 
-function Terminal({ cx, on }: { cx: number; on: boolean }) {
-  const h = R * 1.55;
-  const w = R * 1.5;
+function Terminal({ cx, cy, r, on }: { cx: number; cy: number; r: number; on: boolean }) {
+  const h = r * 1.55;
+  const w = r * 1.5;
   return (
     <path
       className={`hop-node is-terminal${on ? ' is-on' : ''}`}
-      d={`M ${cx} ${CY - h} L ${cx + w} ${CY + h * 0.72} L ${cx - w} ${CY + h * 0.72} Z`}
+      d={`M ${cx} ${cy - h} L ${cx + w} ${cy + h * 0.72} L ${cx - w} ${cy + h * 0.72} Z`}
     />
   );
 }
@@ -45,11 +37,21 @@ export function HopPathViz({ wave, focus }: { wave: HopWave | null; focus: Focus
   const arrived = wave?.arrived ?? 0;
   const nonce = wave?.nonce ?? 0;
 
-  const ticks = Array.from({ length: 7 }, (_, i) => x(i));
+  const L = layoutTrace(total);
+  const { cy, radius: R, fontSize, maxChars } = L;
+
+  // ring ordinals are shown only when they genuinely equal hop numbers
+  const declaredHops = focus?.hop_paths?.[0]?.hops ?? 0;
+  const numbered = ordinalsAreHops(total, declaredHops);
+
+  const restingTicks = Array.from({ length: 7 }, (_, i) => 58 + i * ((L.width - 116) / 6));
 
   return (
     <div className="hop-stage">
-      <svg className="hop-svg" viewBox={`0 0 ${VB_W} ${VB_H}`} role="img"
+      <svg
+        className="hop-svg"
+        viewBox={`0 0 ${L.width} ${L.height}`}
+        role="img"
         aria-label={
           wave === null
             ? 'hop path — standing by'
@@ -59,15 +61,15 @@ export function HopPathViz({ wave, focus }: { wave: HopWave | null; focus: Focus
         }
       >
         {/* the instrument: a resting baseline and its graticule */}
-        <line className="hop-baseline" x1={24} y1={CY} x2={VB_W - 24} y2={CY} />
-        {ticks.map((tx, i) => (
-          <line key={`t${i}`} className="hop-graticule" x1={tx} y1={CY - 34} x2={tx} y2={CY - 28} />
+        <line className="hop-baseline" x1={24} y1={cy} x2={L.width - 24} y2={cy} />
+        {(total === 0 ? restingTicks : L.rings.map((r) => r.x)).map((tx, i) => (
+          <line key={`t${i}`} className="hop-graticule" x1={tx} y1={cy - 34} x2={tx} y2={cy - 28} />
         ))}
 
         {/* connectors */}
-        {Array.from({ length: Math.max(0, total - 1) }, (_, i) => {
-          const from = x(i) + R + 4;
-          const to = x(i + 1) - R - 4;
+        {L.rings.slice(0, -1).map((ring, i) => {
+          const from = ring.x + R + 3;
+          const to = L.rings[i + 1].x - R - 3;
           const len = Math.max(1, to - from);
           const on = arrived > i + 1;
           const terminal = !suppressed && i + 1 === total - 1;
@@ -81,9 +83,9 @@ export function HopPathViz({ wave, focus }: { wave: HopWave | null; focus: Focus
                 suppressed ? 'is-suppressed' : '',
               ].join(' ')}
               x1={from}
-              y1={CY}
+              y1={cy}
               x2={to}
-              y2={CY}
+              y2={cy}
               strokeDasharray={len}
               strokeDashoffset={on ? 0 : len}
             />
@@ -91,25 +93,43 @@ export function HopPathViz({ wave, focus }: { wave: HopWave | null; focus: Focus
         })}
 
         {/* the probe that found nothing — a decaying tail, not an error */}
-        {suppressed && arrived >= 2 && (
+        {suppressed && arrived >= 2 && L.rings[1] && (
           <line
             className="hop-link is-suppressed is-on"
-            x1={x(1) + R + 4}
-            y1={CY}
-            x2={x(1) + PITCH * 0.75}
-            y2={CY}
+            x1={L.rings[1].x + R + 3}
+            y1={cy}
+            x2={L.rings[1].x + L.pitch * 0.75}
+            y2={cy}
             strokeDasharray="2 7"
             strokeDashoffset={0}
             opacity={0.4}
           />
         )}
 
+        {/* the probe — a wavefront that travels the structure rather than a
+            row of dots switching on. This is the product in one image. */}
+        {wave && L.rings[Math.max(0, arrived - 1)] && (
+          <g
+            className={[
+              'probe-group',
+              suppressed ? 'is-suppressed' : '',
+              wave.terminal ? 'is-arrived' : '',
+              wave.terminal || (suppressed && arrived >= total) ? 'is-spent' : '',
+            ].join(' ')}
+            style={{ transform: `translateX(${L.rings[Math.max(0, arrived - 1)].x}px)` }}
+          >
+            <line className="probe-streak" x1={-L.pitch * 0.5} y1={cy} x2={-R - 2} y2={cy} />
+            <circle className="probe-halo" cx={0} cy={cy} r={R + 5} />
+            <circle className="probe-core" cx={0} cy={cy} r={3.4} />
+          </g>
+        )}
+
         {/* rings */}
-        {Array.from({ length: total }, (_, i) => {
+        {L.rings.map((ring) => {
+          const i = ring.index;
           const on = arrived > i;
           const terminal = !suppressed && i === total - 1;
           const dead = suppressed && i === 1;
-          const cx = x(i);
           const cls = [
             'hop-node',
             i === 0 ? 'is-origin' : '',
@@ -117,25 +137,45 @@ export function HopPathViz({ wave, focus }: { wave: HopWave | null; focus: Focus
             dead ? 'is-dead' : '',
             on ? 'is-on' : '',
           ].join(' ');
+          const label = fitLabel(wave?.chain[i] || '', maxChars);
           return (
             <g key={`n${nonce}-${i}`}>
               {on && (
                 <circle
                   key={`p${nonce}-${i}`}
                   className={`hop-pulse${terminal ? ' is-terminal' : ''}${suppressed ? ' is-suppressed' : ''}`}
-                  cx={cx}
-                  cy={CY}
+                  cx={ring.x}
+                  cy={cy}
                   r={R}
                 />
               )}
-              {terminal ? <Terminal cx={cx} on={on} /> : <circle className={cls} cx={cx} cy={CY} r={R} />}
+              {/* arrival at the clause gets a second, slower ring — the beat */}
+              {on && terminal && (
+                <circle key={`i${nonce}`} className="hop-impact" cx={ring.x} cy={cy} r={R} />
+              )}
+              {terminal ? (
+                <Terminal cx={ring.x} cy={cy} r={R} on={on} />
+              ) : (
+                <circle className={cls} cx={ring.x} cy={cy} r={R} />
+              )}
               <text
                 className={`hop-index${on ? ' is-on' : ''}`}
-                x={cx}
-                y={CY - 46}
+                x={ring.x}
+                y={cy - 44}
+                fontSize={Math.max(8, fontSize - 2)}
               >
-                {indexLabel(i, total, suppressed)}
+                {indexLabel(i, total, suppressed, numbered)}
               </text>
+              {/* a staggered caption gets a leader line back to its ring */}
+              {ring.lowerRow && on && (
+                <line
+                  className="hop-leader"
+                  x1={ring.x}
+                  y1={cy + R + 3}
+                  x2={ring.x}
+                  y2={ring.labelY - fontSize}
+                />
+              )}
               <text
                 className={[
                   'hop-label',
@@ -143,17 +183,18 @@ export function HopPathViz({ wave, focus }: { wave: HopWave | null; focus: Focus
                   suppressed ? 'is-suppressed' : '',
                   on ? 'is-on' : '',
                 ].join(' ')}
-                x={cx}
-                y={CY + 46}
+                x={ring.labelX}
+                y={ring.labelY}
+                fontSize={fontSize}
               >
-                {wave?.chain[i] || ''}
+                {label}
               </text>
             </g>
           );
         })}
 
         {total === 0 && (
-          <text className="hop-index" x={VB_W / 2} y={CY + 46}>
+          <text className="hop-index" x={L.width / 2} y={cy + 46} fontSize={10}>
             STANDING BY · PRESS 1
           </text>
         )}
@@ -165,6 +206,7 @@ export function HopPathViz({ wave, focus }: { wave: HopWave | null; focus: Focus
 /** the line under the trace: the verdict in one sentence, or nothing */
 export function HopVerdict({ wave, focus }: { wave: HopWave | null; focus: FocusView | null }) {
   if (!wave) return <div className="hop-verdict" />;
+
   if (wave.suppressed) {
     const a = focus?.absence;
     return (
@@ -178,18 +220,39 @@ export function HopVerdict({ wave, focus }: { wave: HopWave | null; focus: Focus
       </div>
     );
   }
+
   if (!wave.terminal) return <div className="hop-verdict" />;
-  const p = focus?.hop_paths[0];
+
+  const paths = focus?.hop_paths ?? [];
+  const p = paths[0];
+  if (!p) {
+    return (
+      <div className="hop-verdict is-breach">
+        <span>CLAUSE REACHED</span>
+      </div>
+    );
+  }
+
+  // chain length and hop count legitimately differ on real data — say so, so
+  // the two numbers on screen never look like a contradiction
+  const nodes = p.chain?.length ?? 0;
+  const shape = nodes > 0 && nodes - 2 !== p.hops ? `${nodes} nodes · ${p.hops} dependency hops` : null;
+
   return (
     <div className="hop-verdict is-breach">
       <span>
-        {p ? `${p.clause_ref} · ${p.clause_type.replace('_', ' ')} · ${p.notice_window}h notice` : 'CLAUSE REACHED'}
+        {p.clause_ref} · {p.clause_type.replace(/_/g, ' ')} · {p.notice_window}h notice
       </span>
-      {p && (
-        <span className="hop-verdict-note mono">
-          {p.customer} · {p.contract_id} · {p.governing_law}
-        </span>
-      )}
+      <span className="hop-verdict-note mono">
+        {[
+          p.customer,
+          paths.length > 1 ? `+${paths.length - 1} more` : null,
+          p.contract_id,
+          shape,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+      </span>
     </div>
   );
 }
