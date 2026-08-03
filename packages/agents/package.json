@@ -1,0 +1,15 @@
+{
+  "name": "@hopper/agents",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "gate": "tsx src/cli/gate.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
+    "@hopper/contracts": "*"
+  }
+}

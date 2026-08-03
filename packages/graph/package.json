@@ -1,0 +1,13 @@
+{
+  "name": "@hopper/graph",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "seed": "tsx src/cli/seed.ts",
+    "gate": "tsx src/cli/gate.ts"
+  },
+  "dependencies": { "@hopper/contracts": "*", "falkordb": "^6.7.0" }
+}

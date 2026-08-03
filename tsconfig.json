@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": ["node"],
+    "paths": {
+      "@hopper/contracts": ["./contracts/src/index.ts"],
+      "@hopper/graph": ["./packages/graph/src/index.ts"],
+      "@hopper/ingest": ["./packages/ingest/src/index.ts"],
+      "@hopper/orchestrate": ["./packages/orchestrate/src/index.ts"],
+      "@hopper/agents": ["./packages/agents/src/index.ts"],
+      "@hopper/meta": ["./packages/meta/src/index.ts"]
+    }
+  },
+  "include": [
+    "contracts/src/**/*.ts",
+    "packages/*/src/**/*.ts",
+    "apps/ui/src/**/*.ts",
+    "apps/ui/src/**/*.tsx",
+    "scripts/**/*.ts"
+  ],
+  "exclude": ["node_modules", "**/dist"]
+}

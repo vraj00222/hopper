@@ -1,0 +1,19 @@
+{
+  "name": "@hopper/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/main.ts",
+  "scripts": { "dev": "tsx watch src/main.ts" },
+  "dependencies": {
+    "@hopper/contracts": "*",
+    "@hopper/graph": "*",
+    "@hopper/ingest": "*",
+    "@hopper/orchestrate": "*",
+    "@hopper/agents": "*",
+    "@hopper/meta": "*",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}

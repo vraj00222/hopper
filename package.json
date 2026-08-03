@@ -1,0 +1,35 @@
+{
+  "name": "hopper",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Every alert is five hops from a customer. Nobody walks them.",
+  "type": "module",
+  "workspaces": [
+    "contracts",
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "falkor:up": "docker rm -f falkordb 2>/dev/null; docker run -d --name falkordb -p 6379:6379 -p 3000:3000 falkordb/falkordb:latest",
+    "falkor:down": "docker rm -f falkordb",
+    "seed": "tsx packages/graph/src/cli/seed.ts",
+    "pull-live": "tsx packages/ingest/src/cli/pull-live.ts",
+    "replay": "tsx packages/server/src/cli/replay.ts",
+    "dev": "concurrently -n server,ui -c cyan,magenta \"npm run dev:server\" \"npm run dev:ui\"",
+    "dev:server": "tsx watch packages/server/src/main.ts",
+    "dev:ui": "npm --workspace @hopper/ui run dev",
+    "demo": "tsx packages/server/src/cli/demo.ts",
+    "gate": "tsx scripts/gate.ts",
+    "typecheck": "tsc -b --pretty",
+    "test": "npm run gate"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "concurrently": "^9.1.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

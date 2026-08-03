@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+.next/
+*.log
+.DS_Store
+.env
+.env.local
+*.tsbuildinfo
+coverage/
+.vite/
+.turbo/
+
+# no markdown in this repo
+*.md
+!/dev/null
