@@ -16,3 +16,8 @@ coverage/
 *.md
 !/dev/null
 scratch/
+.playwright-mcp/
+.screenshots/
+*.png
+*.jpg
+
