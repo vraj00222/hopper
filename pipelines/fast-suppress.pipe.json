@@ -1,0 +1,56 @@
+{
+  "id": "pipe_fast_suppress",
+  "name": "fast-suppress",
+  "version": "1.1.0",
+  "description": "One counting traversal, one branch, one write-back. No agents, no tools, no token spend. Selected when the traversal found zero paths: there is nothing to walk, so proving absence is the whole job. This is the cheap arm of the 400:1 cost filter.",
+  "entry": "reachability",
+  "nodes": [
+    {
+      "id": "reachability",
+      "kind": "cypher",
+      "op": "traverse.reachability",
+      "params": {
+        "query": "Q2",
+        "max_depth": 5,
+        "mode": "count_only",
+        "collect_chain": false,
+        "budget_ms": 120
+      },
+      "next": ["suppress-gate"]
+    },
+    {
+      "id": "suppress-gate",
+      "kind": "branch",
+      "op": "branch.suppress",
+      "params": {
+        "signal": "path_count",
+        "statement": "SUPPRESSED · zero hops from any repo",
+        "short_circuit": true
+      },
+      "branches": [
+        { "when": "path_count == 0", "to": "writeback" },
+        { "when": "default", "to": "writeback" }
+      ]
+    },
+    {
+      "id": "writeback",
+      "kind": "writeback",
+      "op": "writeback.graph",
+      "params": {
+        "write": ["Decision"],
+        "outcome": "suppressed",
+        "escalate_if_paths": true,
+        "record_run": true
+      }
+    }
+  ],
+  "handles": [
+    { "ecosystem": "npm", "severity_band": "critical", "depth_band": "none" },
+    { "ecosystem": "npm", "severity_band": "high", "depth_band": "none" },
+    { "ecosystem": "npm", "severity_band": "moderate", "depth_band": "none" },
+    { "ecosystem": "npm", "severity_band": "low", "depth_band": "none" },
+    { "ecosystem": "npm", "severity_band": "low", "depth_band": "direct" },
+    { "ecosystem": "pypi", "severity_band": "high", "depth_band": "none" },
+    { "ecosystem": "pypi", "severity_band": "moderate", "depth_band": "none" }
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "id": "pipe_deep_traversal",
+  "name": "deep-traversal",
+  "version": "1.2.0",
+  "description": "Full five-stage memory walk: reachability, deployment, obligation, precedent, ownership, then the Guild agent panel, then every executor, then write-back. Slowest and most thorough. Selected when the advisory is deep in the dependency graph and severe enough that completeness beats latency.",
+  "entry": "reachability",
+  "nodes": [
+    {
+      "id": "reachability",
+      "kind": "cypher",
+      "op": "traverse.reachability",
+      "params": {
+        "query": "Q1",
+        "max_depth": 5,
+        "collect_chain": true,
+        "budget_ms": 1200
+      },
+      "next": ["suppress-gate"]
+    },
+    {
+      "id": "suppress-gate",
+      "kind": "branch",
+      "op": "branch.suppress",
+      "params": {
+        "signal": "path_count",
+        "statement": "SUPPRESSED · zero hops from any repo"
+      },
+      "branches": [
+        { "when": "path_count == 0", "to": "writeback" },
+        { "when": "default", "to": "deployment" }
+      ]
+    },
+    {
+      "id": "deployment",
+      "kind": "cypher",
+      "op": "traverse.deployment",
+      "params": {
+        "query": "Q1.deploys",
+        "include_tiers": ["tier-0", "tier-1", "tier-2"],
+        "envs": ["prod", "staging"],
+        "budget_ms": 900
+      },
+      "next": ["obligation"]
+    },
+    {
+      "id": "obligation",
+      "kind": "cypher",
+      "op": "traverse.obligation",
+      "params": {
+        "clause_type": "breach_notification",
+        "order_by": "hours ASC",
+        "start_clock": true,
+        "budget_ms": 900
+      },
+      "next": ["precedent"]
+    },
+    {
+      "id": "precedent",
+      "kind": "cypher",
+      "op": "traverse.precedent",
+      "params": {
+        "query": "Q3",
+        "lookback_days": 90,
+        "include_outcomes": ["success", "broke_staging", "rolled_back"],
+        "budget_ms": 600
+      },
+      "next": ["ownership"]
+    },
+    {
+      "id": "ownership",
+      "kind": "cypher",
+      "op": "traverse.ownership",
+      "params": {
+        "query": "Q5",
+        "require_oncall": true,
+        "budget_ms": 600
+      },
+      "next": ["agents"]
+    },
+    {
+      "id": "agents",
+      "kind": "agent",
+      "op": "agent.dispatch",
+      "params": {
+        "agents": ["reachability", "patch-engineer", "obligation-officer", "arbiter"],
+        "mode": "full-panel",
+        "allow_conflict": true,
+        "timeout_ms": 9000
+      },
+      "next": ["open-pr"]
+    },
+    {
+      "id": "open-pr",
+      "kind": "tool",
+      "op": "tool.open_pr",
+      "params": { "gate": "arbiter.actions contains open_pr", "auto": true },
+      "next": ["page-oncall"]
+    },
+    {
+      "id": "page-oncall",
+      "kind": "tool",
+      "op": "tool.page_oncall",
+      "params": { "gate": "arbiter.actions contains page_oncall", "auto": true },
+      "next": ["notify-customer"]
+    },
+    {
+      "id": "notify-customer",
+      "kind": "tool",
+      "op": "tool.notify_customer",
+      "params": {
+        "gate": "arbiter.actions contains notify_customer",
+        "auto": false,
+        "requires_approval": true
+      },
+      "next": ["open-ticket"]
+    },
+    {
+      "id": "open-ticket",
+      "kind": "tool",
+      "op": "tool.open_ticket",
+      "params": { "gate": "arbiter.actions contains open_ticket", "auto": true },
+      "next": ["writeback"]
+    },
+    {
+      "id": "writeback",
+      "kind": "writeback",
+      "op": "writeback.graph",
+      "params": {
+        "write": ["AgentVerdict", "Decision", "PatchAttempt", "Incident"],
+        "record_run": true
+      }
+    }
+  ],
+  "handles": [
+    { "ecosystem": "npm", "severity_band": "critical", "depth_band": "deep" },
+    { "ecosystem": "npm", "severity_band": "critical", "depth_band": "shallow" },
+    { "ecosystem": "npm", "severity_band": "high", "depth_band": "deep" },
+    { "ecosystem": "npm", "severity_band": "high", "depth_band": "shallow" },
+    { "ecosystem": "npm", "severity_band": "high", "depth_band": "none" },
+    { "ecosystem": "npm", "severity_band": "moderate", "depth_band": "deep" },
+    { "ecosystem": "pypi", "severity_band": "critical", "depth_band": "deep" },
+    { "ecosystem": "pypi", "severity_band": "high", "depth_band": "deep" }
+  ]
+}
