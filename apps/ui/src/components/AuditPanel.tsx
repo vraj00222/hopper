@@ -18,7 +18,7 @@ export function AuditPanel({ audit }: { audit: AuditEntry[] }) {
   return (
     <section className="panel audit-panel">
       <button type="button" className="audit-toggle" onClick={() => setOpen((v) => !v)}>
-        <span className="panel-title">Audit</span>
+        <span className="label">Audit</span>
         <span className="audit-count">
           {rows.length} entries · {open ? 'hide' : 'show'} {open ? '▾' : '▸'}
         </span>

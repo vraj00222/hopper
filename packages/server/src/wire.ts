@@ -120,10 +120,22 @@ export async function boot(opts: BootOptions = {}): Promise<Hopper> {
     `runtime    ${mock ? 'local' : process.env.ROCKETRIDE_AUTH ? 'rocketride bridge armed' : 'local (no key)'} · ${specs.length} specs`,
   );
 
+  // The outbound side of the action layer is mocked whenever the credential
+  // layer holds nothing to act with. Running MOCK=false without a GitHub token
+  // should not turn beat 1 into three failed actions — it should show the
+  // receipts it can honestly produce, each stamped mock:true. Everything
+  // upstream (graph, advisories, agents, the RocketRide bridge) stays live.
+  const hasActionCreds = Boolean(
+    (await agents.credential('GITHUB_TOKEN')) ?? (await agents.credential('SLACK_WEBHOOK')),
+  );
+  const toolsMock = mock || !hasActionCreds;
   const tools = createTools({
-    mock,
+    mock: toolsMock,
     credential: (name) => agents.credential(name),
   });
+  if (toolsMock && !mock) {
+    log('tools      mock receipts · no GITHUB_TOKEN or SLACK_WEBHOOK in the credential store');
+  }
 
   const orchestrator = createOrchestrator({
     graph,

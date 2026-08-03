@@ -15,16 +15,16 @@ function hhmm(iso: string): string {
 
 function hopsLabel(item: FeedItem): string {
   if (item.state === 'suppressed') return '0';
-  if (item.state === 'traversing') return 'WALKING';
+  if (item.state === 'traversing') return 'walking';
   if (item.hops === 0) return '0';
-  return `${item.hops} HOPS`;
+  return `${item.hops} hops`;
 }
 
-function Row({ item, onSelect }: { item: FeedItem; onSelect?: (id: string) => void }) {
+function Row({ item, onSelect, fresh }: { item: FeedItem; onSelect?: (id: string) => void; fresh?: boolean }) {
   const actionable = onSelect !== undefined;
   return (
     <div
-      className={`feed-row is-${item.state}${actionable ? ' is-actionable' : ''}`}
+      className={`feed-row is-${item.state}${actionable ? ' is-actionable' : ''}${fresh ? ' is-new' : ''}`}
       onClick={actionable ? () => onSelect(item.ghsa_id) : undefined}
       role={actionable ? 'button' : undefined}
       tabIndex={actionable ? 0 : undefined}
@@ -64,7 +64,7 @@ export function FeedPanel({
   return (
     <section className="panel">
       <div className="panel-head">
-        <h2 className="panel-title">Feed</h2>
+        <h2 className="label">Feed</h2>
         <span className="funnel mono">
           <strong>{funnel.ingested}</strong> ingested &rarr; <strong>{funnel.escalated}</strong> escalated
           <span className="sep"> · </span>p99 {funnel.p99_ms}ms
@@ -72,10 +72,11 @@ export function FeedPanel({
       </div>
 
       <div className="scroll">
-        {shown.map((item) => (
+        {shown.map((item, i) => (
           <Row
             key={item.ghsa_id}
             item={item}
+            fresh={i === 0 && item.state !== 'suppressed'}
             onSelect={selectable.has(item.ghsa_id) ? onSelect : undefined}
           />
         ))}
