@@ -74,8 +74,11 @@ export function GatePanel({
       {/* one signature at a time — a queue of identical gates is noise, and the
           operator can only sign the one in front of them anyway */}
       {pending.slice(0, 1).map((a) => (
-        <div key={a.id}>
-          <div className="gate-caption">Guild gate · no token until a human signs</div>
+        <div className="gate-block" key={a.id}>
+          <div className="gate-caption">
+            <span className="gate-mark" aria-hidden="true" />
+            Guild gate · no token until a human signs
+          </div>
           <div className="gate-row">
             <div>
               <div className="gate-title">{a.title}</div>

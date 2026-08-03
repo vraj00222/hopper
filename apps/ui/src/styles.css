@@ -667,6 +667,22 @@ body {
 /* ── act 4 · the gate ───────────────────────────────────────────────────── */
 
 .gate-stack { min-height: 0; overflow-y: auto; }
+
+/* the one thing on this screen that cannot happen on its own is the one thing
+   drawn inside a border — everything else is hairlines and space */
+.gate-block {
+  border: 1px solid color-mix(in srgb, var(--signal) 40%, transparent);
+  background: color-mix(in srgb, var(--signal) 6%, transparent);
+  padding: 10px 13px 12px;
+}
+.gate-mark {
+  width: 5px;
+  height: 5px;
+  flex: none;
+  background: var(--signal);
+  animation: hopperPulse 1.6s ease-in-out infinite;
+}
+
 .gate-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; }
 .gate-title { font-size: 13.5px; color: var(--paper); letter-spacing: -0.005em; }
 .gate-body {
@@ -687,7 +703,10 @@ body {
   font-size: 8.5px;
   letter-spacing: 0.22em;
   color: var(--signal);
-  margin-bottom: 7px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
 }
 
 .approve-btn {
@@ -749,11 +768,28 @@ body {
   grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 12px;
-  padding: 4px 0;
+  padding: 4px 0 4px 10px;
   border-bottom: 1px solid var(--rule-soft);
   font-family: var(--mono);
   font-size: 11px;
+  position: relative;
 }
+
+/* the advisory in focus carries a lit edge and a faint ground, so the feed
+   says which row the rest of the screen is about without a second colour */
+.feed-row.is-focus { background: var(--raise); }
+.feed-row.is-focus::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  background: var(--signal);
+}
+.feed-row.is-focus.is-escalated::before { background: var(--breach); }
+.feed-row.is-focus.is-suppressed::before { background: var(--clear); }
+.feed-row.is-focus .feed-pkg { color: var(--paper); }
 .feed-row.is-actionable { cursor: pointer; }
 .feed-row.is-actionable:hover { background: var(--raise); }
 .feed-row.is-actionable:focus-visible { outline: 1px solid var(--signal); outline-offset: -1px; }
@@ -778,23 +814,35 @@ body {
 
 .feed-kev { font-size: 8.5px; letter-spacing: 0.08em; color: var(--breach); margin-left: 7px; }
 
+/* `…47 suppressed` is the product's whole argument, so it gets an affordance
+   that says "there is more here" rather than reading as a footer */
 .feed-collapse {
   width: 100%;
   text-align: left;
   background: none;
   border: 0;
-  border-bottom: 1px solid var(--rule-soft);
-  padding: 7px 0;
+  border-top: 1px solid var(--rule-soft);
+  padding: 8px 0 8px 10px;
+  margin-top: 3px;
   font-family: var(--mono);
   font-size: 11px;
   color: var(--ink-faint);
   cursor: pointer;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
 .feed-collapse:hover { color: var(--paper); }
+.feed-collapse:focus-visible { outline: 1px solid var(--signal); outline-offset: -1px; }
 .feed-collapse-hint { color: var(--ink-ghost); font-size: 9.5px; }
+.feed-caret { color: var(--clear); flex: none; width: 9px; display: inline-block; }
+.feed-collapse-label { display: flex; align-items: center; gap: 8px; min-width: 0; }
+
+/* an expanded suppression is evidence, not an alert — it sits indented and
+   quieter than the rows above it */
+.feed-row.is-collapsed { padding-left: 27px; color: var(--ink-ghost); }
+.feed-row.is-collapsed .feed-pkg { color: color-mix(in srgb, var(--muted) 72%, transparent); }
 
 /* ── audit ──────────────────────────────────────────────────────────────── */
 

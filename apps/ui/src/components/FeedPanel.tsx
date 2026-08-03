@@ -20,11 +20,32 @@ function hopsLabel(item: FeedItem): string {
   return `${item.hops} hops`;
 }
 
-function Row({ item, onSelect, fresh }: { item: FeedItem; onSelect?: (id: string) => void; fresh?: boolean }) {
+function Row({
+  item,
+  onSelect,
+  fresh,
+  focused,
+  collapsed,
+}: {
+  item: FeedItem;
+  onSelect?: (id: string) => void;
+  fresh?: boolean;
+  focused?: boolean;
+  collapsed?: boolean;
+}) {
   const actionable = onSelect !== undefined;
   return (
     <div
-      className={`feed-row is-${item.state}${actionable ? ' is-actionable' : ''}${fresh ? ' is-new' : ''}`}
+      className={[
+        'feed-row',
+        `is-${item.state}`,
+        actionable ? 'is-actionable' : '',
+        fresh ? 'is-new' : '',
+        focused ? 'is-focus' : '',
+        collapsed ? 'is-collapsed' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       onClick={actionable ? () => onSelect(item.ghsa_id) : undefined}
       role={actionable ? 'button' : undefined}
       tabIndex={actionable ? 0 : undefined}
@@ -52,11 +73,14 @@ export function FeedPanel({
   funnel,
   onSelect,
   selectable,
+  focused,
 }: {
   feed: FeedItem[];
   funnel: FunnelStats;
   onSelect: (ghsa_id: string) => void;
   selectable: Set<string>;
+  /** the advisory the rest of the screen is about, so the feed can say which */
+  focused: string | null;
 }) {
   const [expanded, setExpanded] = useState(false);
   const { shown, collapsed } = splitFeed(feed);
@@ -77,6 +101,7 @@ export function FeedPanel({
             key={item.ghsa_id}
             item={item}
             fresh={i === 0 && item.state !== 'suppressed'}
+            focused={item.ghsa_id === focused}
             onSelect={selectable.has(item.ghsa_id) ? onSelect : undefined}
           />
         ))}
@@ -86,15 +111,22 @@ export function FeedPanel({
             type="button"
             className="feed-collapse mono"
             onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
           >
-            <span>&hellip;{collapsed.length} suppressed</span>
+            <span className="feed-collapse-label">
+              <span className="feed-caret" aria-hidden="true">
+                {expanded ? '–' : '+'}
+              </span>
+              <span>&hellip;{collapsed.length} suppressed</span>
+            </span>
             <span className="feed-collapse-hint">
               {expanded ? 'collapse' : 'zero hops from any repo'}
             </span>
           </button>
         )}
 
-        {expanded && collapsed.map((item) => <Row key={item.ghsa_id} item={item} />)}
+        {expanded &&
+          collapsed.map((item) => <Row key={item.ghsa_id} item={item} collapsed />)}
       </div>
     </section>
   );
