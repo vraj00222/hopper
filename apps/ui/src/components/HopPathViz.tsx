@@ -137,7 +137,13 @@ export function HopPathViz({ wave, focus }: { wave: HopWave | null; focus: Focus
             dead ? 'is-dead' : '',
             on ? 'is-on' : '',
           ].join(' ');
-          const label = fitLabel(wave?.chain[i] || '', maxChars);
+          // the origin ring names the package, not the advisory id — some
+          // server paths label hop 0 with the GHSA
+          const raw = wave?.chain[i] || '';
+          const label = fitLabel(
+            i === 0 && /^GHSA-/i.test(raw) ? focus?.advisory?.package_name || raw : raw,
+            maxChars,
+          );
           return (
             <g key={`n${nonce}-${i}`}>
               {on && (

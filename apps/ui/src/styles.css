@@ -779,3 +779,12 @@ body {
 .no-motion .probe-group { opacity: 0; }
 .no-motion .sev-fill,
 .no-motion .signed-rule { transform: none; }
+
+.gate-queue {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--ink-ghost);
+  padding-top: 8px;
+  border-top: 1px solid var(--rule-soft);
+  margin-top: 9px;
+}
