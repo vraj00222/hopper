@@ -596,14 +596,92 @@ async function main(): Promise<void> {
     }
 
     if (task) {
-      const reported = await bridge.report(task, renderRunForRocketRide(escRun));
-      assert(reported, 'the run was pushed into the live task for their trace panel');
+      const before = bridge.status().failures;
       await bridge.terminate(task);
-      assert(bridge.status().failures === 0, 'terminate() clean', `failures=${bridge.status().failures}`);
+      assert(
+        bridge.status().failures === before,
+        'terminate() on the live task is clean',
+        `failures=${bridge.status().failures}`,
+      );
+    }
+
+    // and prove the compiled shape genuinely RUNS, not just loads: a short spec,
+    // compiled the same way, with a payload pushed through it end to end.
+    // (The 14-component spec above is not fed data here on purpose — every
+    // interior component is a real text->text model invocation.)
+    const shortSpec: PipelineSpec = {
+      id: 'pipe.gate.short.v1',
+      name: 'Gate probe',
+      version: '1.0.0',
+      description: 'two stages, compiled the same way as the real thing',
+      entry: 'source',
+      nodes: [
+        { id: 'source', kind: 'source', op: 'source.advisory', next: ['reachability'] },
+        { id: 'reachability', kind: 'cypher', op: 'traverse.reachability', next: ['done'] },
+        { id: 'done', kind: 'sink', op: 'sink.done' },
+      ],
+    };
+
+    if (connected) {
+      const smallCompiled = compileToRocketRide(shortSpec, HERO_ADVISORY, { projectId: 'hopper' });
+      const t2 = performance.now();
+      const smallTask = await bridge.dispatch(smallCompiled, 'HOPPER gate · dataflow');
+      if (smallTask) {
+        const result = await bridge.report(
+          smallTask,
+          renderRunForRocketRide(escRun).split('\n').slice(0, 3).join(' | '),
+        );
+        const text = JSON.stringify(result ?? {});
+        assert(
+          result !== null && text.includes('HOPPER'),
+          'a compiled HOPPER pipeline processed a real payload end to end',
+          `${(performance.now() - t2).toFixed(0)}ms · ${text.slice(0, 90)}...`,
+        );
+        await bridge.terminate(smallTask);
+      } else {
+        fail('a compiled HOPPER pipeline processed a real payload end to end', bridge.status().lastError ?? '');
+      }
     }
 
     await bridge.disconnect();
     assert(!bridge.connected(), 'disconnect() clean');
+
+    // the whole wiring, live: createRuntime with a real bridge dispatches the
+    // selected spec while the traversal runs locally and never waits for it
+    const liveRt = createRuntime({
+      mock: false,
+      loadPipelineDir: false,
+      auth,
+      url: uri,
+      projectId: process.env.ROCKETRIDE_PROJECT_ID ?? 'hopper',
+    });
+    const liveRun = await liveRt.run(
+      shortSpec,
+      HERO_ADVISORY,
+      ctxFor(
+        {
+          graph: createStubGraph({ hopPaths: HERO_HOP_PATHS }),
+          bus: createStubBus(),
+          agents: createStubAgents(),
+          meta: createStubMeta(),
+          tools: createTools({ mock: true }),
+        },
+        'gate: live dispatch',
+      ),
+    );
+    assert(
+      liveRun.outcome === 'escalated' && liveRun.traces.length === 3,
+      'the local traversal completed while the remote dispatch was still in flight',
+      `${liveRun.latency_ms.toFixed(1)}ms for ${liveRun.traces.length} nodes`,
+    );
+    await flushRemote(liveRt);
+    const attached = remoteTaskOf(liveRt, liveRun.run_id);
+    assert(
+      attached !== null && attached.token.length > 0,
+      'createRuntime attributed a real RocketRide task to the run',
+      attached ? `id=${attached.id} project=${attached.projectId}` : 'no task attached',
+    );
+    await closeRuntime(liveRt);
 
     // the demo must survive their service being down
     const deadBridge: RocketRideBridge = {

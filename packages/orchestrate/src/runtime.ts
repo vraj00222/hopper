@@ -228,7 +228,21 @@ export async function closeRuntime(runtime: PipelineRuntimePort): Promise<void> 
   await BRIDGES.get(runtime as unknown as object)?.disconnect();
 }
 
-/** what we push into the remote task — the run, legibly, for their trace panel */
+/**
+ * One line — what the runtime actually pushes into a live task. Every interior
+ * component of a compiled pipeline is a real text→text model invocation, so the
+ * payload stays small on purpose; the full per-node trace lives in `run.traces`
+ * and in our own UI.
+ */
+export function renderRunSummaryLine(run: PipelineRun): string {
+  return (
+    `HOPPER ${run.ghsa_id} · pipeline ${run.pipeline_id} · ${run.outcome} · ` +
+    `${run.traces.length} nodes · ${run.latency_ms.toFixed(1)}ms · ` +
+    `${run.traces.reduce((a, t) => a + t.tokens, 0)} tokens · ${run.receipts.length} receipts`
+  );
+}
+
+/** the full run, legibly — for a short pipeline, or for our own audit panel */
 export function renderRunForRocketRide(run: PipelineRun): string {
   const lines = [
     `HOPPER run ${run.run_id}`,
@@ -496,7 +510,7 @@ export function createRuntime(opts: RuntimeOptions = {}): PipelineRuntimePort {
       const settle = remotePending.then(async (task) => {
         if (!task) return;
         remoteTasks.set(id, task);
-        await bridge.report(task, renderRunForRocketRide(run));
+        await bridge.report(task, renderRunSummaryLine(run));
         await bridge.terminate(task);
       });
       settles.push(settle.catch(() => undefined));
