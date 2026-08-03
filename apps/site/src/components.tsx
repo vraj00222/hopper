@@ -135,9 +135,45 @@ export function HopTrack({
   );
 }
 
-/* ── countdown ────────────────────────────────────────────────────────────── */
+/* ── status readout ───────────────────────────────────────────────────────── */
 
-export function Countdown({ hours, live }: { hours: number; live: boolean }) {
+export type Tone = 'idle' | 'live' | 'breach' | 'clear';
+
+/**
+ * The panel says what it is doing. The dot pulses only while a wave is moving
+ * and stops the moment the traversal resolves — the page runs no permanent
+ * loops, so the one thing still moving is always the thing to look at.
+ */
+export function Status({ tone, children }: { tone: Tone; children: React.ReactNode }) {
+  return (
+    <span className={`status status--${tone}`}>
+      <span className="status__dot" />
+      {children}
+    </span>
+  );
+}
+
+/* ── obligation: the countdown and what it is counting ────────────────────── */
+
+export function Obligation({
+  hours,
+  live,
+  hops,
+  total,
+  customer,
+  clause,
+  contract,
+  regime,
+}: {
+  hours: number;
+  live: boolean;
+  hops: number;
+  total: number;
+  customer: string;
+  clause: string;
+  contract: string;
+  regime: string;
+}) {
   const deadline = useMemo(() => isoPlusHours(hours), [hours]);
   const [secs, setSecs] = useState(() => secondsUntil(deadline));
   const reduced = useReducedMotion();
@@ -148,15 +184,43 @@ export function Countdown({ hours, live }: { hours: number; live: boolean }) {
     return () => window.clearInterval(t);
   }, [deadline, live, reduced]);
 
-  const clock = fmtCountdown(secs).replace('T-', '');
+  /* U+2212, not a hyphen: it is set on the digit baseline at the digit weight,
+     so the clock reads as one figure instead of a word joined to a number. */
+  const clock = live
+    ? fmtCountdown(secs).replace('T-', 'T−')
+    : 'T−--:--:--';
   const due = deadline.replace('T', ' ').replace(/\.\d+Z$/, 'Z');
 
   return (
-    <>
-      <span className="clock num">{clock}</span>
-      <span className="clock__foot">
-        due <b>{due}</b>
-      </span>
-    </>
+    <div className={`obl ${live ? 'is-on' : ''}`}>
+      <span className="lbl">time to notify</span>
+      <span className="obl__clock num">{clock}</span>
+      <p className="obl__note">
+        {live ? (
+          <>
+            {clause} · {customer} · written notice of a security incident within{' '}
+            {hours} hours of becoming aware. Due <b>{due}</b>.
+          </>
+        ) : (
+          'Resolving the contract clause for the affected accounts.'
+        )}
+      </p>
+      <dl className="obl__ledger">
+        <div>
+          <dt>hops traversed</dt>
+          <dd className="obl__v">
+            {hops} of {total}
+          </dd>
+        </div>
+        <div>
+          <dt>contract</dt>
+          <dd>{contract}</dd>
+        </div>
+        <div>
+          <dt>obligation</dt>
+          <dd>{regime}</dd>
+        </div>
+      </dl>
+    </div>
   );
 }

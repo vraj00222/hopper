@@ -52,9 +52,16 @@ export function useInView<T extends HTMLElement>(
 
 /**
  * Advances an integer 0..steps once per `interval`, starting when `armed`.
+ * `lastHold` adds a beat before the final step, so a traversal lands on its
+ * verdict rather than sliding into it.
  * With reduced motion it reports the final value immediately.
  */
-export function useStepper(steps: number, interval: number, armed: boolean): number {
+export function useStepper(
+  steps: number,
+  interval: number,
+  armed: boolean,
+  lastHold = 0,
+): number {
   const reduced = useReducedMotion();
   const [n, setN] = useState(0);
 
@@ -64,15 +71,36 @@ export function useStepper(steps: number, interval: number, armed: boolean): num
       setN(steps);
       return;
     }
-    let i = 0;
     setN(0);
-    const t = window.setInterval(() => {
-      i += 1;
-      setN(i);
-      if (i >= steps) window.clearInterval(t);
-    }, interval);
-    return () => window.clearInterval(t);
-  }, [steps, interval, armed, reduced]);
+    const timers: number[] = [];
+    for (let k = 1; k <= steps; k += 1) {
+      const at = k * interval + (k === steps ? lastHold : 0);
+      timers.push(window.setTimeout(() => setN(k), at));
+    }
+    return () => timers.forEach((t) => window.clearTimeout(t));
+  }, [steps, interval, armed, reduced, lastHold]);
 
   return n;
+}
+
+/**
+ * Latches true `ms` after `active` first goes true, and stays true. Used to
+ * space the two traversals apart so they read as a sequence, not a chorus.
+ * With reduced motion the wait is skipped — the final state is the point.
+ */
+export function useHold(active: boolean, ms: number): boolean {
+  const reduced = useReducedMotion();
+  const [on, setOn] = useState(false);
+
+  useEffect(() => {
+    if (!active || on) return;
+    if (reduced) {
+      setOn(true);
+      return;
+    }
+    const t = window.setTimeout(() => setOn(true), ms);
+    return () => window.clearTimeout(t);
+  }, [active, ms, reduced, on]);
+
+  return on;
 }

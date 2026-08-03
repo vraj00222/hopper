@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112..125,500..700&family=Chivo:wght@300;400;500;600&family=Spline+Sans+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #0F141C; overflow: hidden; }
+  * { box-sizing: border-box; }
+  a { color: #E8A33D; text-decoration: none; }
+  a:hover { color: #E8E4DA; }
+  button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  :focus-visible { outline: 1px solid #E8A33D; outline-offset: 2px; }
+  @keyframes hopperScan { 0% { transform: translateX(-100%); } 100% { transform: translateX(240%); } }
+  @keyframes hopperPulse { 0% { opacity: .25; } 50% { opacity: 1; } 100% { opacity: .25; } }
+  @keyframes hopperTension { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-2px); } 65% { transform: translateY(1px); } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; background: #0F141C; color: #E8E4DA; font-family: Chivo, system-ui, sans-serif; display: flex; flex-direction: column; position: relative; overflow: hidden; -webkit-font-smoothing: antialiased;">
+
+  <header style="height: 46px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 18px; border-bottom: 1px solid rgba(232,228,218,0.09);">
+    <span style="font-size: 10px; letter-spacing: 3.4px; color: #7A8595; font-weight: 500;">HOPPER</span>
+    <span style="width: 1px; height: 14px; background: rgba(232,228,218,0.12);"></span>
+    <span style="font-family: 'Spline Sans Mono', monospace; font-size: 13px; letter-spacing: .2px;">{{ cveId }}</span>
+    <span style="display: flex; align-items: center; gap: 8px;">
+      <span style="display: flex; gap: 2px; align-items: flex-end;">
+        <sc-for list="{{ sevTicks }}" as="t" hint-placeholder-count="4">
+          <span style="{{ t.style }}"></span>
+        </sc-for>
+      </span>
+      <span style="{{ sevLabelStyle }}">{{ sevLabel }}</span>
+    </span>
+    <span style="font-family: 'Spline Sans Mono', monospace; font-size: 11px; color: #7A8595;">{{ subject }}</span>
+    <span style="flex: 1;"></span>
+    <span style="font-family: 'Spline Sans Mono', monospace; font-size: 11px; color: #7A8595;">{{ wallClock }}</span>
+    <span style="display: flex; gap: 6px;">
+      <button onClick="{{ run1 }}" style="{{ key1Style }}">1 escalate</button>
+      <button onClick="{{ run2 }}" style="{{ key2Style }}">2 suppress</button>
+      <button onClick="{{ run3 }}" style="{{ key3Style }}">3 reroute</button>
+    </span>
+  </header>
+
+  <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: 292px 1fr 332px;">
+
+    <section style="{{ feedStyle }}">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px;">
+        <span style="font-size: 9px; letter-spacing: 2.4px; color: #7A8595;">FEED</span>
+        <span style="font-family: 'Spline Sans Mono', monospace; font-size: 10px; color: #7A8595;">{{ funnel }}</span>
+      </div>
+      <div style="display: flex; flex-direction: column;">
+        <sc-for list="{{ feedRows }}" as="r" hint-placeholder-count="4">
+          <div style="{{ r.rowStyle }}">
+            <span style="{{ r.barStyle }}"></span>
+            <span style="font-family: 'Spline Sans Mono', monospace; font-size: 10px; color: #7A8595; width: 52px; flex: none;">{{ r.time }}</span>
+            <span style="{{ r.pkgStyle }}">{{ r.pkg }}</span>
+            <span style="font-family: 'Spline Sans Mono', monospace; font-size: 10px; color: #7A8595; flex: none;">{{ r.hops }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <button onClick="{{ toggleSuppressed }}" style="display: flex; align-items: center; gap: 8px; padding: 9px 0 9px 10px; margin-top: 4px; border-top: 1px solid rgba(232,228,218,0.07); width: 100%; text-align: left; font-family: 'Spline Sans Mono', monospace; font-size: 10px; color: #7A8595;">
+        <span style="color: #4A9B8E;">{{ suppressedCaret }}</span>{{ suppressedLabel }}
+      </button>
+      <sc-if value="{{ suppressedOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 5px; padding: 2px 0 0 18px; max-height: 300px; overflow: hidden;">
+          <sc-for list="{{ suppressedRows }}" as="s" hint-placeholder-count="6">
+            <div style="display: flex; gap: 10px; font-family: 'Spline Sans Mono', monospace; font-size: 10px; color: rgba(122,133,149,0.72);">
+              <span style="width: 44px; flex: none;">{{ s.time }}</span>
+              <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ s.pkg }}</span>
+              <span>0</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </section>
+
+    <section style="display: flex; flex-direction: column; border-right: 1px solid rgba(232,228,218,0.09); min-width: 0;">
+
+      <div style="{{ hopStyle }}">
+        <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px;">
+          <span style="font-size: 9px; letter-spacing: 2.4px; color: #7A8595;">HOP PATH</span>
+          <div style="display: flex; align-items: baseline; gap: 7px;">
+            <span style="{{ hopCountStyle }}">{{ hopCount }}</span>
+            <span style="font-family: 'Spline Sans Mono', monospace; font-size: 9px; letter-spacing: 1.6px; color: #7A8595;">HOPS</span>
+          </div>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 0;">
+          <div style="display: flex; align-items: flex-start; width: 100%;">
+            <sc-for list="{{ nodes }}" as="n" hint-placeholder-count="10">
+              <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center;">
+                <div style="display: flex; align-items: center; width: 100%; height: 14px;">
+                  <span style="{{ n.leftStyle }}"></span>
+                  <span style="{{ n.dotStyle }}"></span>
+                  <span style="{{ n.rightStyle }}"></span>
+                </div>
+                <div style="{{ n.labelStyle }}">{{ n.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="{{ hopVerdictStyle }}">{{ hopVerdict }}</div>
+        </div>
+      </div>
+
+      <div style="{{ clockStyle }}">
+        <div style="font-size: 9px; letter-spacing: 2.4px; color: #7A8595;">OBLIGATION</div>
+        <div style="{{ clockFaceStyle }}">{{ clockFace }}</div>
+        <div style="display: flex; align-items: center; gap: 12px; font-family: 'Spline Sans Mono', monospace; font-size: 11px; color: #7A8595; margin-top: 2px;">
+          <span style="{{ clockCustomerStyle }}">{{ clockCustomer }}</span>
+          <span>contractual notice</span>
+          <span style="width: 1px; height: 10px; background: rgba(232,228,218,0.14);"></span>
+          <span>{{ clockWindow }} window</span>
+          <span style="width: 1px; height: 10px; background: rgba(232,228,218,0.14);"></span>
+          <span>{{ clockClause }}</span>
+        </div>
+      </div>
+
+      <div style="{{ actionsStyle }}">
+        <div style="font-size: 9px; letter-spacing: 2.4px; color: #7A8595; margin-bottom: 12px;">ACTIONS</div>
+        <div style="display: flex; flex-direction: column;">
+          <sc-for list="{{ receipts }}" as="a" hint-placeholder-count="2">
+            <div style="{{ a.rowStyle }}">
+              <span style="{{ a.markStyle }}"></span>
+              <span style="flex: 1; min-width: 0; font-size: 12.5px; color: #E8E4DA;">{{ a.label }}</span>
+              <span style="font-family: 'Spline Sans Mono', monospace; font-size: 10px; color: #7A8595;">{{ a.ref }}</span>
+              <span style="{{ a.tagStyle }}">{{ a.tag }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ gatePending }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ gateRowStyle }}">
+              <span style="width: 5px; height: 5px; flex: none; background: #E8A33D; animation: hopperPulse 1.6s ease-in-out infinite;"></span>
+              <span style="flex: 1; min-width: 0; font-size: 12.5px;">{{ gateLabel }}</span>
+              <span style="font-family: 'Spline Sans Mono', monospace; font-size: 10px; color: #7A8595;">held for signature</span>
+              <button onClick="{{ approve }}" style="font-family: 'Spline Sans Mono', monospace; font-size: 10.5px; letter-spacing: 1.6px; color: #0F141C; background: #E8A33D; padding: 7px 15px;" style-hover="background: #E8E4DA;">APPROVE</button>
+              <span style="font-family: 'Spline Sans Mono', monospace; font-size: 9px; letter-spacing: 1.4px; color: #E8A33D; width: 42px; text-align: right;">gated</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{ gateSigned }}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid rgba(232,228,218,0.07);">
+              <span style="width: 5px; height: 5px; flex: none; background: #4A9B8E;"></span>
+              <span style="flex: 1; min-width: 0; font-size: 12.5px;">{{ gateSignedLabel }}</span>
+              <span style="font-family: 'Spline Sans Mono', monospace; font-size: 10px; color: #7A8595;">{{ gateSignedRef }}</span>
+              <span style="font-family: 'Spline Sans Mono', monospace; font-size: 9px; letter-spacing: 1.4px; color: #4A9B8E; width: 42px; text-align: right;">signed</span>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </section>
+
+    <section style="{{ agentsStyle }}">
+      <div style="font-size: 9px; letter-spacing: 2.4px; color: #7A8595; margin-bottom: 14px;">AGENTS</div>
+      <div style="position: relative;">
+        <span style="{{ tensionBarStyle }}"></span>
+        <sc-for list="{{ agents }}" as="g" hint-placeholder-count="4">
+          <div style="display: flex; flex-direction: column;">
+          <div style="{{ g.rowStyle }}">
+            <span style="{{ g.nameStyle }}">{{ g.name }}</span>
+            <sc-if value="{{ g.working }}" hint-placeholder-val="{{ false }}">
+              <span style="flex: 1; min-width: 0; height: 1px; background: rgba(232,228,218,0.09); overflow: hidden; margin: 0 4px;">
+                <span style="display: block; width: 40%; height: 1px; background: #E8A33D; animation: hopperScan 1.1s linear infinite;"></span>
+              </span>
+            </sc-if>
+            <sc-if value="{{ g.settled }}" hint-placeholder-val="{{ true }}">
+              <span style="{{ g.verdictStyle }}">{{ g.verdict }}</span>
+            </sc-if>
+            <span style="{{ g.confStyle }}">{{ g.conf }}</span>
+          </div>
+          <sc-if value="{{ g.hasNote }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ g.noteStyle }}">{{ g.note }}</div>
+          </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex: 1; min-height: 0; margin-top: 18px; padding-top: 12px; border-top: 1px solid rgba(232,228,218,0.07); display: flex; flex-direction: column; gap: 7px; overflow: hidden;">
+        <sc-for list="{{ transcript }}" as="l" hint-placeholder-count="4">
+          <div style="{{ l.style }}">{{ l.text }}</div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+
+  <div style="{{ pipeStyle }}">
+    <span style="font-size: 9px; letter-spacing: 2.4px; color: #7A8595;">PIPELINE</span>
+    <span style="{{ pipeClassStyle }}">{{ pipeClass }}</span>
+    <span style="color: #7A8595; font-family: 'Spline Sans Mono', monospace; font-size: 11px;">&#8594;</span>
+    <span style="{{ pipeNameStyle }}">{{ pipeName }}</span>
+    <span style="font-family: 'Spline Sans Mono', monospace; font-size: 10px; color: #7A8595;">{{ pipeStats }}</span>
+    <sc-if value="{{ pipeChanged }}" hint-placeholder-val="{{ false }}">
+      <span style="font-family: 'Spline Sans Mono', monospace; font-size: 9px; letter-spacing: 1.4px; color: #E8A33D;">rerouted from {{ pipePrev }}</span>
+    </sc-if>
+    <span style="flex: 1;"></span>
+    <span style="font-family: 'Spline Sans Mono', monospace; font-size: 10px; color: #7A8595;">{{ phaseLabel }}</span>
+  </div>
+
+  <button onClick="{{ toggleAudit }}" style="{{ auditBarStyle }}">
+    <span style="color: #7A8595;">{{ auditCaret }}</span>
+    <span style="font-size: 9px; letter-spacing: 2.4px; color: #7A8595;">AUDIT</span>
+    <span style="font-family: 'Spline Sans Mono', monospace; font-size: 10px; color: #7A8595;">{{ auditSummary }}</span>
+  </button>
+
+  <sc-if value="{{ auditOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; left: 0; right: 0; bottom: 30px; height: 322px; background: #0F141C; border-top: 1px solid rgba(232,228,218,0.14); padding: 16px 20px; overflow: hidden;">
+      <div style="font-size: 9px; letter-spacing: 2.4px; color: #7A8595; margin-bottom: 12px;">AUDIT &#183; {{ cveId }}</div>
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <sc-for list="{{ auditRows }}" as="e" hint-placeholder-count="8">
+          <div style="display: flex; gap: 18px; font-family: 'Spline Sans Mono', monospace; font-size: 11px; color: #E8E4DA;">
+            <span style="width: 92px; flex: none; color: #7A8595;">{{ e.time }}</span>
+            <span style="width: 108px; flex: none; color: #7A8595;">{{ e.actor }}</span>
+            <span style="flex: 1; min-width: 0;">{{ e.text }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900},&quot;stepMs&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:300,&quot;min&quot;:120,&quot;max&quot;:600,&quot;step&quot;:20,&quot;unit&quot;:&quot;ms&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Motion&quot;},&quot;autoPlay&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Motion&quot;},&quot;startScenario&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;1&quot;,&quot;2&quot;,&quot;3&quot;],&quot;default&quot;:&quot;1&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Motion&quot;}}">
+const C = { ground: '#0F141C', bone: '#E8E4DA', muted: '#7A8595', amber: '#E8A33D', oxide: '#C7433A', teal: '#4A9B8E' };
+const MONO = "'Spline Sans Mono', ui-monospace, monospace";
+const DISPLAY = 'Archivo, system-ui, sans-serif';
+const HAIR = '1px solid rgba(232,228,218,0.09)';
+
+const SCEN = {
+  1: {
+    cve: 'CVE-2026-4173', subject: 'brace-expansion 1.1.11', sev: { label: 'HIGH 8.7', ticks: 3, color: C.oxide },
+    chain: ['brace-expansion', 'minimatch', 'glob', '@jest/reporters', '@jest/core', 'jest', 'platform-build', 'build-api', 'Northwind Systems', '\u00a77.3'],
+    hops: 6, suppress: false,
+    customer: 'Northwind Systems', clause: '\u00a77.3', window: '24h', secs: 21 * 3600 + 43 * 60 + 7,
+    funnel: '53 ingested \u2192 4 escalated', suppressedCount: 47,
+    agents: [
+      { name: 'Reachability', verdict: 'REACHABLE', conf: '0.91', tone: 'bone', at: 700 },
+      { name: 'Patch Engineer', verdict: 'CONFLICT', conf: '0.44', tone: 'oxide', at: 1500 },
+      { name: 'Obligation', verdict: '\u00a77.3 \u00b7 24h', conf: '1.00', tone: 'bone', at: 2100 },
+      { name: 'Arbiter', verdict: '\u2192 HUMAN', conf: '', tone: 'amber', at: 2700 }
+    ],
+    tension: [0, 1], tensionAt: 1500,
+    tensionNote: 'contradicts reachability \u00b7 bumped 90s ago \u00b7 staging #2211 failed',
+    transcript: [
+      { at: 900, text: 'reach \u00b7 import path confirmed: glob@7.2.0 \u2192 @jest/reporters' },
+      { at: 1500, text: 'patch \u00b7 brace-expansion bumped 90s ago \u2014 staging #2211 broke' },
+      { at: 1900, text: 'reach \u00b7 holds at 0.91 \u00b7 call site live in build-api' },
+      { at: 2300, text: 'oblig \u00b7 msa \u00a77.3 \u00b7 24h notice from confirmed exposure' },
+      { at: 2900, text: 'arbiter \u00b7 conflict unresolved \u2192 human signature required' }
+    ],
+    receipts: [
+      { at: 3200, label: 'PR #4471 opened', ref: 'platform-build', tag: 'auto', tone: 'teal' },
+      { at: 3600, label: 'Paged @dvorak in #platform-oncall', ref: '14:22:41', tag: 'auto', tone: 'teal' }
+    ],
+    clockAt: 3000, gateAt: 4200, gateLabel: 'Notify Northwind Systems',
+    pipe: { cls: 'npm/high/deep', name: 'deep-traversal', stats: '94% success \u00b7 1.8s', prev: '' },
+    feed: [
+      { time: '14:22:09', pkg: 'brace-expansion', hops: '6', active: true, tone: 'oxide' },
+      { time: '14:19:52', pkg: 'tar-fs', hops: '3', tone: 'bone' },
+      { time: '14:11:04', pkg: 'undici', hops: '2', tone: 'bone' },
+      { time: '13:58:30', pkg: 'postcss', hops: '4', tone: 'bone' }
+    ],
+    audit: [
+      { time: '14:22:09.114', actor: 'ingest', text: 'CVE-2026-4173 received \u00b7 osv.dev \u00b7 cvss 8.7' },
+      { time: '14:22:09.402', actor: 'router', text: 'class npm/high/deep \u2192 pipeline deep-traversal' },
+      { time: '14:22:11.230', actor: 'graph', text: '6 hops traversed \u00b7 1 service \u00b7 1 customer matched' },
+      { time: '14:22:11.980', actor: 'reachability', text: 'REACHABLE 0.91 \u00b7 evidence build-api/src/glob.ts:44' },
+      { time: '14:22:12.560', actor: 'patch-eng', text: 'CONFLICT 0.44 \u00b7 prior bump reverted, staging #2211 failed' },
+      { time: '14:22:13.001', actor: 'obligation', text: 'Northwind Systems MSA \u00a77.3 \u00b7 24h notice window opened' },
+      { time: '14:22:13.470', actor: 'arbiter', text: 'escalate \u2192 human \u00b7 notify action held for signature' },
+      { time: '14:22:41.008', actor: 'action', text: 'PR #4471 opened \u00b7 @dvorak paged in #platform-oncall' }
+    ]
+  },
+  2: {
+    cve: 'CVE-2026-4188', subject: 'lodash.template 4.5.0', sev: { label: 'MODERATE 5.4', ticks: 2, color: C.amber },
+    chain: ['lodash.template', 'gulp-header', 'legacy-docs-site'],
+    hops: 0, suppress: true, dieAt: 1,
+    customer: '', clause: '', window: '', secs: 0,
+    funnel: '53 ingested \u2192 4 escalated', suppressedCount: 48,
+    agents: [
+      { name: 'Reachability', verdict: 'UNREACHABLE', conf: '0.03', tone: 'teal', at: 900 },
+      { name: 'Patch Engineer', verdict: 'NO ACTION', conf: '', tone: 'muted', at: 1300 },
+      { name: 'Obligation', verdict: 'NONE', conf: '1.00', tone: 'teal', at: 1700 },
+      { name: 'Arbiter', verdict: '\u2192 SUPPRESS', conf: '', tone: 'teal', at: 2100 }
+    ],
+    tension: [], tensionAt: 0, tensionNote: '',
+    transcript: [
+      { at: 900, text: 'reach \u00b7 no import path from any tracked repo' },
+      { at: 1400, text: 'patch \u00b7 nothing to patch \u00b7 package not built' },
+      { at: 1800, text: 'oblig \u00b7 no customer exposure \u00b7 no notice window opens' },
+      { at: 2200, text: 'arbiter \u00b7 suppressed \u00b7 recorded, no page, no notice' }
+    ],
+    receipts: [{ at: 2600, label: 'Suppressed \u00b7 no notice required', ref: '14:31:02', tag: 'auto', tone: 'teal' }],
+    clockAt: 0, gateAt: 0, gateLabel: '',
+    pipe: { cls: 'npm/moderate/shallow', name: 'shallow-probe', stats: '99% success \u00b7 0.3s', prev: 'deep-traversal' },
+    feed: [
+      { time: '14:31:02', pkg: 'lodash.template', hops: '0', active: true, tone: 'teal' },
+      { time: '14:22:09', pkg: 'brace-expansion', hops: '6', tone: 'bone' },
+      { time: '14:19:52', pkg: 'tar-fs', hops: '3', tone: 'bone' },
+      { time: '14:11:04', pkg: 'undici', hops: '2', tone: 'bone' }
+    ],
+    audit: [
+      { time: '14:31:02.088', actor: 'ingest', text: 'CVE-2026-4188 received \u00b7 osv.dev \u00b7 cvss 5.4' },
+      { time: '14:31:02.310', actor: 'router', text: 'class npm/moderate/shallow \u2192 pipeline shallow-probe' },
+      { time: '14:31:02.640', actor: 'graph', text: 'traversal terminated at depth 2 \u00b7 no tracked repo' },
+      { time: '14:31:02.910', actor: 'reachability', text: 'UNREACHABLE 0.03' },
+      { time: '14:31:03.140', actor: 'obligation', text: 'no customer exposure \u00b7 no notice window' },
+      { time: '14:31:03.402', actor: 'arbiter', text: 'SUPPRESS \u00b7 retained for audit, 90 days' }
+    ]
+  },
+  3: {
+    cve: 'CVE-2026-4402', subject: 'certifi 2024.2.2', sev: { label: 'CRITICAL 9.4', ticks: 4, color: C.oxide },
+    chain: ['certifi', 'urllib3', 'requests', 'botocore', 'boto3', 's3transfer', 'data-loader', 'etl-core', 'warehouse-sync', 'ingest-api', 'edge-gateway', 'billing-svc', 'Calderon Freight', '\u00a711.2'],
+    hops: 9, suppress: false,
+    customer: 'Calderon Freight', clause: '\u00a711.2', window: '4h', secs: 3 * 3600 + 12 * 60 + 44,
+    funnel: '61 ingested \u2192 5 escalated', suppressedCount: 52,
+    agents: [
+      { name: 'Reachability', verdict: 'REACHABLE', conf: '0.97', tone: 'bone', at: 700 },
+      { name: 'Patch Engineer', verdict: 'PATCH READY', conf: '0.82', tone: 'teal', at: 1300 },
+      { name: 'Obligation', verdict: '\u00a711.2 \u00b7 4h', conf: '1.00', tone: 'oxide', at: 1900 },
+      { name: 'Arbiter', verdict: '\u2192 HUMAN', conf: '', tone: 'amber', at: 2500 }
+    ],
+    tension: [], tensionAt: 0, tensionNote: '',
+    transcript: [
+      { at: 900, text: 'reach \u00b7 reachable via edge-gateway \u2192 billing-svc' },
+      { at: 1400, text: 'patch \u00b7 upstream 2026.7.1 clean \u00b7 patch prepared' },
+      { at: 2000, text: 'oblig \u00b7 msa \u00a711.2 \u00b7 4h window \u00b7 clock already running' },
+      { at: 2600, text: 'arbiter \u00b7 patch ready, notice due < 4h \u2192 signature required' }
+    ],
+    receipts: [
+      { at: 3000, label: 'PR #4478 opened', ref: 'billing-svc', tag: 'auto', tone: 'teal' },
+      { at: 3400, label: 'Paged @okafor in #data-oncall', ref: '15:04:18', tag: 'auto', tone: 'teal' }
+    ],
+    clockAt: 2800, gateAt: 4000, gateLabel: 'Notify Calderon Freight',
+    pipe: { cls: 'pypi/critical/deep', name: 'graph-walk-v3', stats: '88% success \u00b7 4.2s', prev: 'deep-traversal' },
+    feed: [
+      { time: '15:04:18', pkg: 'certifi', hops: '9', active: true, tone: 'oxide' },
+      { time: '14:31:02', pkg: 'lodash.template', hops: '0', tone: 'bone' },
+      { time: '14:22:09', pkg: 'brace-expansion', hops: '6', tone: 'bone' },
+      { time: '14:19:52', pkg: 'tar-fs', hops: '3', tone: 'bone' }
+    ],
+    audit: [
+      { time: '15:04:18.021', actor: 'ingest', text: 'CVE-2026-4402 received \u00b7 osv.dev \u00b7 cvss 9.4' },
+      { time: '15:04:18.260', actor: 'router', text: 'class pypi/critical/deep \u2192 pipeline graph-walk-v3 (reroute)' },
+      { time: '15:04:22.480', actor: 'graph', text: '9 hops traversed \u00b7 3 services \u00b7 1 customer matched' },
+      { time: '15:04:23.100', actor: 'reachability', text: 'REACHABLE 0.97 \u00b7 evidence billing-svc/http/pool.py:88' },
+      { time: '15:04:23.640', actor: 'patch-eng', text: 'PATCH READY 0.82 \u00b7 certifi 2026.7.1 \u00b7 no api change' },
+      { time: '15:04:24.010', actor: 'obligation', text: 'Calderon Freight MSA \u00a711.2 \u00b7 4h notice \u00b7 T-03:12:44' },
+      { time: '15:04:24.390', actor: 'arbiter', text: 'escalate \u2192 human \u00b7 notify action held for signature' }
+    ]
+  }
+};
+
+const SUPPRESSED_SAMPLE = [
+  { time: '14:30:41', pkg: 'lodash.template \u00b7 legacy-docs-site' },
+  { time: '14:28:12', pkg: 'ansi-regex \u00b7 dev only' },
+  { time: '14:26:55', pkg: 'q \u00b7 unreferenced' },
+  { time: '14:24:03', pkg: 'graceful-fs \u00b7 no import path' },
+  { time: '14:20:19', pkg: 'json5 \u00b7 build-time only' },
+  { time: '14:17:47', pkg: 'shell-quote \u00b7 unreferenced' }
+];
+
+const PHASES = ['idle', 'arrive', 'hop', 'agents', 'act', 'clock', 'gate'];
+
+class Component extends DCLogic {
+  state = {
+    sc: 1, phase: 'idle', lit: -1, arrived: false, dead: false,
+    settled: [], tension: false, lines: 0, receipts: 0,
+    clockOn: false, secs: 0, gate: 'hidden', wall: '14:22:09',
+    suppressedOpen: false, auditOpen: false, pipeChanged: false
+  };
+
+  componentDidMount() {
+    this.timers = [];
+    this.onKey = (e) => {
+      if (e.key === '1') this.play(1);
+      if (e.key === '2') this.play(2);
+      if (e.key === '3') this.play(3);
+    };
+    window.addEventListener('keydown', this.onKey);
+    this.tick = setInterval(() => {
+      if (!this.state.clockOn || this.state.secs <= 0) return;
+      this.setState({ secs: this.state.secs - 1 });
+    }, 1000);
+    const auto = this.props.autoPlay ?? true;
+    const start = Number(this.props.startScenario ?? 1) || 1;
+    if (auto) this.timers.push(setTimeout(() => this.play(start), 500));
+    else this.finalState(start);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('keydown', this.onKey);
+    clearInterval(this.tick);
+    (this.timers || []).forEach(clearTimeout);
+  }
+
+  get reduced() {
+    return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  at(ms, fn) { this.timers.push(setTimeout(fn, ms)); }
+
+  finalState(n) {
+    const d = SCEN[n];
+    this.setState({
+      sc: n, phase: 'gate', lit: d.suppress ? d.dieAt : d.chain.length - 1, arrived: !d.suppress,
+      dead: d.suppress, settled: [0, 1, 2, 3], tension: d.tension.length > 0,
+      lines: d.transcript.length, receipts: d.receipts.length, clockOn: !d.suppress, secs: d.secs,
+      gate: d.gateAt ? 'pending' : 'hidden', wall: d.feed[0].time, pipeChanged: !!d.pipe.prev, auditOpen: false
+    });
+  }
+
+  play(n) {
+    (this.timers || []).forEach(clearTimeout);
+    this.timers = [];
+    const d = SCEN[n];
+    if (this.reduced) { this.finalState(n); return; }
+    this.setState({
+      sc: n, phase: 'arrive', lit: -1, arrived: false, dead: false, settled: [], tension: false,
+      lines: 0, receipts: 0, clockOn: false, secs: d.secs, gate: 'hidden',
+      wall: d.feed[0].time, suppressedOpen: false, auditOpen: false, pipeChanged: false
+    });
+    const step = Number(this.props.stepMs ?? 300) || 300;
+    const stop = d.suppress ? d.dieAt : d.chain.length - 1;
+
+    this.at(560, () => this.setState({ phase: 'hop' }));
+    for (let i = 0; i <= stop; i++) this.at(600 + i * step, () => this.setState({ lit: i }));
+    const landed = 620 + stop * step;
+    this.at(landed, () => this.setState(d.suppress ? { dead: true } : { arrived: true }));
+    if (d.pipe.prev) this.at(landed + 200, () => this.setState({ pipeChanged: true }));
+
+    const t0 = landed + 380;
+    this.at(t0, () => this.setState({ phase: 'agents' }));
+    d.agents.forEach((a, i) => this.at(t0 + a.at, () => this.setState(s => ({ settled: s.settled.concat([i]) }))));
+    if (d.tension.length) this.at(t0 + d.tensionAt, () => this.setState({ tension: true }));
+    d.transcript.forEach((l, i) => this.at(t0 + l.at, () => this.setState({ lines: i + 1 })));
+    if (d.clockAt) this.at(t0 + d.clockAt, () => this.setState({ phase: 'clock', clockOn: true }));
+    d.receipts.forEach((r, i) => this.at(t0 + r.at, () => this.setState({ phase: 'act', receipts: i + 1 })));
+    if (d.gateAt) this.at(t0 + d.gateAt, () => this.setState({ phase: 'gate', gate: 'pending' }));
+  }
+
+  panel(name) {
+    const s = this.state, ph = s.phase;
+    const focus = {
+      idle: [], arrive: ['feed'], hop: ['hop'], agents: ['agents'],
+      act: ['actions', 'agents'], clock: ['clock'], gate: ['actions']
+    }[ph] || [];
+    const seen = {
+      feed: ph !== 'idle',
+      hop: ['hop', 'agents', 'act', 'clock', 'gate'].indexOf(ph) >= 0,
+      agents: ['agents', 'act', 'clock', 'gate'].indexOf(ph) >= 0,
+      clock: (s.clockOn),
+      actions: s.receipts > 0 || s.gate !== 'hidden',
+      pipe: ph !== 'idle'
+    }[name];
+    if (s.auditOpen) return name === 'pipe' ? 0.5 : 0.16;
+    if (s.gate === 'pending' && name !== 'actions') return name === 'clock' ? 0.42 : 0.16;
+    if (focus.indexOf(name) >= 0) return 1;
+    if (seen) return 0.44;
+    return 0.14;
+  }
+
+  renderVals() {
+    const s = this.state, d = SCEN[s.sc];
+    const pad = { padding: '16px 20px' };
+    const sect = (name, extra) => Object.assign({
+      opacity: this.panel(name), transition: 'opacity 480ms cubic-bezier(.4,0,.2,1)',
+      display: 'flex', flexDirection: 'column', minWidth: 0
+    }, pad, extra || {});
+
+    const chain = d.chain, cnt = chain.length;
+    const lit = s.lit;
+    const flow = s.arrived ? C.oxide : (s.dead ? C.teal : C.amber);
+    const dim = 'rgba(232,228,218,0.13)';
+    const labelSize = cnt <= 6 ? 11 : cnt <= 10 ? 10 : 9;
+    const nodes = chain.map((label, i) => {
+      const on = i <= lit;
+      const isEnd = i === cnt - 1;
+      const col = on ? ((isEnd && s.arrived) ? C.oxide : flow) : dim;
+      const size = isEnd ? 9 : (i >= cnt - 3 ? 7 : 5);
+      return {
+        label,
+        dotStyle: {
+          width: size + 'px', height: size + 'px', flex: 'none', background: on ? col : 'transparent',
+          border: '1px solid ' + (on ? col : dim), borderRadius: isEnd ? 0 : '50%',
+          transform: on ? 'rotate(0deg)' : 'rotate(0deg)',
+          transition: 'background 260ms linear, border-color 260ms linear',
+          boxShadow: 'none'
+        },
+        leftStyle: { flex: 1, height: '1px', background: i === 0 ? 'transparent' : (i <= lit ? col : dim), transition: 'background 220ms linear' },
+        rightStyle: { flex: 1, height: '1px', background: isEnd ? 'transparent' : (i < lit ? col : dim), transition: 'background 220ms linear' },
+        labelStyle: {
+          fontFamily: MONO, fontSize: labelSize + 'px', lineHeight: 1.25, marginTop: '9px',
+          textAlign: 'center', color: on ? (isEnd && s.arrived ? C.oxide : C.bone) : 'rgba(122,133,149,0.55)',
+          padding: '0 4px', overflowWrap: 'anywhere', height: '42px',
+          fontWeight: isEnd && s.arrived ? 500 : 400, transition: 'color 300ms linear'
+        }
+      };
+    });
+
+    let hopVerdict = '', hv = { color: C.muted };
+    if (s.dead) { hopVerdict = 'SUPPRESSED \u00b7 zero hops from any repo'; hv = { color: C.teal }; }
+    else if (s.arrived) { hopVerdict = '\u2192 ' + d.customer + ' \u00b7 ' + d.clause + ' \u00b7 notice window open'; hv = { color: C.oxide }; }
+    else if (lit >= 0) { hopVerdict = 'traversing \u00b7 depth ' + (lit + 1) + ' of ' + cnt; hv = { color: C.amber }; }
+    else hopVerdict = 'awaiting advisory';
+
+    const agents = d.agents.map((a, i) => {
+      const settled = s.settled.indexOf(i) >= 0;
+      const working = !settled && ['agents', 'act', 'clock', 'gate'].indexOf(s.phase) >= 0;
+      const tone = { bone: C.bone, oxide: C.oxide, teal: C.teal, amber: C.amber, muted: C.muted }[a.tone];
+      const inTension = s.tension && d.tension.indexOf(i) >= 0;
+      return {
+        name: a.name, verdict: a.verdict, conf: settled ? a.conf : '', working, settled,
+        hasNote: inTension && d.tension[d.tension.length - 1] === i && !!d.tensionNote,
+        note: d.tensionNote,
+        noteStyle: {
+          fontFamily: MONO, fontSize: '10px', lineHeight: 1.35, color: C.oxide,
+          padding: '0 0 9px 12px', background: 'rgba(199,67,58,0.07)'
+        },
+        rowStyle: {
+          display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 0 10px 12px',
+          borderTop: i === 0 ? 'none' : HAIR,
+          background: inTension ? 'rgba(199,67,58,0.07)' : 'transparent',
+          animation: inTension ? 'hopperTension 520ms cubic-bezier(.4,0,.2,1) 1' : 'none',
+          transition: 'background 400ms linear'
+        },
+        nameStyle: { flex: 'none', width: '104px', fontSize: '12.5px', color: settled ? C.bone : C.muted, transition: 'color 300ms linear' },
+        verdictStyle: {
+          flex: 1, minWidth: 0, fontFamily: MONO, fontSize: '11.5px', letterSpacing: '.3px',
+          color: settled ? tone : C.muted, fontWeight: settled ? 500 : 300,
+          opacity: settled ? 1 : 0.4, transition: 'opacity 260ms linear, font-weight 200ms linear'
+        },
+        confStyle: {
+          flex: 'none', width: '34px', textAlign: 'right', fontFamily: MONO, fontSize: '11.5px',
+          fontVariantNumeric: 'tabular-nums', color: settled ? (a.conf && Number(a.conf) < 0.5 ? C.oxide : C.muted) : 'rgba(122,133,149,0.4)'
+        }
+      };
+    });
+
+    const transcript = d.transcript.slice(0, s.lines).map((l, i) => ({
+      text: l.text,
+      style: {
+        fontFamily: MONO, fontSize: '10.5px', lineHeight: 1.4,
+        color: i === s.lines - 1 ? C.bone : 'rgba(122,133,149,' + Math.max(0.35, 0.85 - (s.lines - 1 - i) * 0.16) + ')',
+        transition: 'color 400ms linear'
+      }
+    }));
+
+    const receipts = d.receipts.slice(0, s.receipts).map((r, i) => ({
+      label: r.label, ref: r.ref, tag: r.tag,
+      rowStyle: { display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 0', borderTop: i === 0 ? 'none' : HAIR },
+      markStyle: { width: '5px', height: '5px', flex: 'none', background: C.teal },
+      tagStyle: { fontFamily: MONO, fontSize: '9px', letterSpacing: '1.4px', color: C.muted, width: '42px', textAlign: 'right' }
+    }));
+
+    const hh = Math.floor(s.secs / 3600), mm = Math.floor((s.secs % 3600) / 60), ss = s.secs % 60;
+    const p2 = n => String(n).padStart(2, '0');
+    const late = s.secs > 0 && s.secs < 4 * 3600;
+    const clockShown = s.clockOn;
+
+    const sevTicks = [0, 1, 2, 3].map(i => ({
+      style: {
+        width: '3px', height: (5 + i * 3) + 'px',
+        background: i < d.sev.ticks ? d.sev.color : 'rgba(232,228,218,0.16)'
+      }
+    }));
+
+    const keyBtn = n => ({
+      fontFamily: MONO, fontSize: '10px', letterSpacing: '.6px', padding: '5px 9px',
+      color: s.sc === n ? C.ground : C.muted, background: s.sc === n ? C.bone : 'transparent',
+      border: '1px solid ' + (s.sc === n ? C.bone : 'rgba(232,228,218,0.14)')
+    });
+
+    return {
+      cveId: d.cve, subject: d.subject, sevLabel: d.sev.label, sevTicks,
+      sevLabelStyle: { fontFamily: MONO, fontSize: '10.5px', letterSpacing: '1.2px', color: d.sev.color },
+      wallClock: s.wall, funnel: d.funnel,
+      run1: () => this.play(1), run2: () => this.play(2), run3: () => this.play(3),
+      key1Style: keyBtn(1), key2Style: keyBtn(2), key3Style: keyBtn(3),
+
+      feedStyle: sect('feed', { borderRight: HAIR }),
+      feedRows: d.feed.map((r, i) => ({
+        time: r.time, pkg: r.pkg, hops: r.hops,
+        rowStyle: {
+          display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0 9px 10px',
+          borderTop: i === 0 ? 'none' : HAIR,
+          background: r.active ? 'rgba(232,228,218,0.035)' : 'transparent', position: 'relative'
+        },
+        barStyle: {
+          position: 'absolute', left: 0, top: '6px', bottom: '6px', width: '2px',
+          background: r.active ? (r.tone === 'teal' ? C.teal : C.oxide) : 'transparent'
+        },
+        pkgStyle: {
+          flex: 1, minWidth: 0, fontFamily: MONO, fontSize: '11.5px',
+          color: r.active ? C.bone : 'rgba(232,228,218,0.62)',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+        }
+      })),
+      suppressedLabel: '\u2026' + d.suppressedCount + ' suppressed',
+      suppressedCaret: s.suppressedOpen ? '\u2013' : '+',
+      suppressedOpen: s.suppressedOpen,
+      suppressedRows: SUPPRESSED_SAMPLE,
+      toggleSuppressed: () => this.setState(x => ({ suppressedOpen: !x.suppressedOpen })),
+
+      hopStyle: sect('hop', { flex: 'none', height: '318px', borderBottom: HAIR }),
+      nodes, hopCount: String(d.hops),
+      hopCountStyle: {
+        fontFamily: DISPLAY, fontVariationSettings: "'wdth' 125, 'wght' 600", fontSize: '30px',
+        lineHeight: 1, color: s.dead ? C.teal : (lit >= 0 ? (s.arrived ? C.oxide : C.amber) : C.muted),
+        fontVariantNumeric: 'tabular-nums', transition: 'color 400ms linear'
+      },
+      hopVerdict, hopVerdictStyle: Object.assign({
+        fontFamily: MONO, fontSize: '11.5px', letterSpacing: '.4px', marginTop: '26px',
+        textAlign: 'center', transition: 'color 400ms linear'
+      }, hv),
+
+      clockStyle: sect('clock', { flex: 'none', height: '196px', borderBottom: HAIR, justifyContent: 'center', gap: '4px' }),
+      clockFace: clockShown ? 'T-' + p2(hh) + ':' + p2(mm) + ':' + p2(ss) : (d.suppress ? 'no notice window' : 'T-\u2013\u2013:\u2013\u2013:\u2013\u2013'),
+      clockFaceStyle: {
+        fontFamily: clockShown ? DISPLAY : MONO,
+        fontVariationSettings: "'wdth' 125, 'wght' 600",
+        fontSize: clockShown ? '78px' : '20px', lineHeight: 1,
+        letterSpacing: clockShown ? '-0.5px' : '.5px',
+        fontVariantNumeric: 'tabular-nums', fontFeatureSettings: "'tnum' 1",
+        color: clockShown ? (late ? C.oxide : C.bone) : 'rgba(122,133,149,0.55)',
+        transition: 'color 600ms linear'
+      },
+      clockCustomer: d.suppress ? '\u2014' : d.customer,
+      clockCustomerStyle: { color: clockShown ? C.bone : C.muted },
+      clockWindow: d.window || '\u2014', clockClause: d.clause || '\u2014',
+
+      actionsStyle: sect('actions', { flex: 1, minHeight: 0 }),
+      receipts,
+      gatePending: s.gate === 'pending', gateSigned: s.gate === 'signed',
+      gateLabel: d.gateLabel,
+      gateSignedLabel: d.gateLabel.replace('Notify', 'Notified'),
+      gateSignedRef: 'signed \u00b7 operator \u00b7 ' + s.wall,
+      gateRowStyle: {
+        display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 12px', marginTop: '2px',
+        borderTop: HAIR, border: '1px solid rgba(232,163,61,0.4)', background: 'rgba(232,163,61,0.06)'
+      },
+      approve: () => this.setState({ gate: 'signed' }),
+
+      agentsStyle: sect('agents'),
+      agents, transcript, tension: s.tension, tensionNote: d.tensionNote,
+      tensionNoteStyle: {
+        fontFamily: MONO, fontSize: '10px', lineHeight: 1.35, color: C.oxide,
+        padding: '2px 0 8px 12px', borderTop: 'none'
+      },
+      tensionBarStyle: {
+        position: 'absolute', left: 0, top: s.tension ? '0px' : '0px', height: s.tension ? '82px' : '0px',
+        width: '2px', background: C.oxide, transition: 'height 420ms cubic-bezier(.4,0,.2,1)'
+      },
+
+      pipeStyle: {
+        height: '34px', flex: 'none', display: 'flex', alignItems: 'center', gap: '12px',
+        padding: '0 20px', borderTop: HAIR, opacity: this.panel('pipe'),
+        transition: 'opacity 480ms linear'
+      },
+      pipeClass: d.pipe.cls, pipeName: d.pipe.name, pipeStats: '(' + d.pipe.stats + ')',
+      pipeClassStyle: { fontFamily: MONO, fontSize: '11px', color: 'rgba(232,228,218,0.7)' },
+      pipeNameStyle: {
+        fontFamily: MONO, fontSize: '11px', letterSpacing: '.3px',
+        color: s.pipeChanged ? C.amber : C.bone, transition: 'color 500ms linear'
+      },
+      pipeChanged: s.pipeChanged && !!d.pipe.prev, pipePrev: d.pipe.prev,
+      phaseLabel: 'stage \u00b7 ' + s.phase,
+
+      auditBarStyle: {
+        height: '30px', flex: 'none', display: 'flex', alignItems: 'center', gap: '12px',
+        padding: '0 20px', borderTop: HAIR, width: '100%', textAlign: 'left',
+        fontFamily: MONO, fontSize: '10px',
+        background: s.auditOpen ? 'rgba(232,228,218,0.03)' : 'transparent'
+      },
+      auditCaret: s.auditOpen ? '\u2013' : '+',
+      auditSummary: d.audit.length + ' entries \u00b7 retained 90 days',
+      auditOpen: s.auditOpen, auditRows: d.audit,
+      toggleAudit: () => this.setState(x => ({ auditOpen: !x.auditOpen }))
+    };
+  }
+}
+
+</script>
+</body>
+</html>

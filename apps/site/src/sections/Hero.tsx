@@ -1,21 +1,43 @@
 import { useEffect, useState } from 'react';
 import { HOP_INTERVAL_MS } from '@hopper/contracts';
-import { Countdown, HopTrack } from '../components';
-import { CONSOLE_URL, ESCALATED_PATH, HERO, SUPPRESSED_PATH } from '../data';
-import { useStepper } from '../hooks';
+import { HopTrack, Obligation, Status } from '../components';
+import {
+  CONSOLE_URL,
+  ESCALATED_PATH,
+  HERO,
+  HOP_TOTAL,
+  SUPPRESSED_PATH,
+  hopsWalked,
+} from '../data';
+import { useHold, useStepper } from '../hooks';
+
+/* The page runs one orchestrated sequence and these are its beats. The two
+   traversals are deliberately not simultaneous: the escalation runs, lands on
+   a clause and starts a clock, and only then — once the clock is visibly
+   ticking — does the second advisory arrive and die one hop in. Played
+   together they compete; played in order the second one is the argument. */
+const ARM_MS = 600;
+const HOLD_MS = 1700;
+const STOP_BEAT_MS = 260;
 
 export function Hero() {
   const [armed, setArmed] = useState(false);
 
   useEffect(() => {
-    const t = window.setTimeout(() => setArmed(true), 420);
+    const t = window.setTimeout(() => setArmed(true), ARM_MS);
     return () => window.clearTimeout(t);
   }, []);
 
   const hit = useStepper(ESCALATED_PATH.length, HOP_INTERVAL_MS, armed);
-  const supp = useStepper(SUPPRESSED_PATH.length, HOP_INTERVAL_MS, armed);
-
   const landed = hit >= ESCALATED_PATH.length;
+
+  const second = useHold(landed, HOLD_MS);
+  const supp = useStepper(
+    SUPPRESSED_PATH.length,
+    HOP_INTERVAL_MS,
+    second,
+    STOP_BEAT_MS,
+  );
   const settled = supp >= SUPPRESSED_PATH.length;
 
   return (
@@ -60,34 +82,58 @@ export function Hero() {
             </p>
           </div>
 
-          <div className="panel">
-            <div className="panel__bar">
-              <span className="lbl">traversal · advisory → clause</span>
-              <span className="mono">{HERO.advisory.ghsa_id}</span>
+          <div className="hero__panels">
+            <div className="panel">
+              <div className="panel__bar">
+                <span className="lbl">
+                  trace 01 · {HERO.advisory.cve_id}
+                </span>
+                <Status tone={landed ? 'breach' : hit === 0 ? 'idle' : 'live'}>
+                  {landed ? 'obligation active' : hit === 0 ? 'standby' : 'propagating'}
+                </Status>
+              </div>
+
+              <HopTrack rows={ESCALATED_PATH} reached={hit} terminal="breach" />
+
+              <Obligation
+                hours={HERO.windowHours}
+                live={landed}
+                hops={hopsWalked(hit)}
+                total={HOP_TOTAL}
+                customer={HERO.customer}
+                clause={HERO.clause}
+                contract={HERO.contract}
+                regime={HERO.regime}
+              />
             </div>
 
-            <HopTrack rows={ESCALATED_PATH} reached={hit} terminal="breach" />
+            <p className="hero__aside">
+              Nobody installs <b>brace-expansion</b>. It arrives four layers down,
+              through <b>minimatch</b> and <b>glob</b>, inside every JavaScript build
+              tool on earth. The dangerous dependencies are the ones nobody chose.
+            </p>
 
-            <div className={`verdict verdict--breach ${landed ? 'is-on' : ''}`}>
-              <span className="lbl">
-                notice due — {HERO.customer} · {HERO.clause}
-              </span>
-              <Countdown hours={HERO.windowHours} live={landed} />
-            </div>
+            <div className={`panel ${settled ? 'panel--clear' : ''}`}>
+              <div className="panel__bar">
+                <span className="lbl">
+                  trace 02 · {HERO.suppressed.cve_id} · same minute
+                </span>
+                <Status tone={settled ? 'clear' : supp === 0 ? 'idle' : 'live'}>
+                  {settled ? 'closed' : supp === 0 ? 'standby' : 'propagating'}
+                </Status>
+              </div>
 
-            <div className="panel__sub">
-              <span className="lbl">same minute · second advisory</span>
-              <span className="mono">{HERO.suppressed.cve_id}</span>
-            </div>
+              <HopTrack rows={SUPPRESSED_PATH} reached={supp} terminal="clear" />
 
-            <HopTrack rows={SUPPRESSED_PATH} reached={supp} terminal="clear" />
-
-            <div className={`verdict verdict--clear ${settled ? 'is-on' : ''}`}>
-              <span className="verdict__flag">suppressed · zero hops</span>
-              <p className="cta-note" style={{ marginTop: 8 }}>
-                CVSS 8.1, and it reaches nothing you ship. Written to the log. Nobody is
-                paged. This is what happens to 99% of them.
-              </p>
+              <div className={`verdict verdict--clear ${settled ? 'is-on' : ''}`}>
+                <span className="verdict__flag">suppressed · zero hops</span>
+                <p className="cta-note" style={{ marginTop: 8 }}>
+                  CVSS 8.1, and it reaches nothing you ship. No service runs it, so no
+                  customer is exposed and no clause applies. Written to the log. Nobody
+                  is paged.
+                </p>
+                <p className="verdict__rate">99.76% of advisories end here.</p>
+              </div>
             </div>
           </div>
         </div>
