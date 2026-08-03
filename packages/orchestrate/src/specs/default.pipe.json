@@ -1,0 +1,102 @@
+{
+  "id": "pipe.traversal.full.v1",
+  "name": "Traversal chain — full",
+  "version": "1.0.0",
+  "description": "Five-stage traversal (reachability, deployment, obligation, precedent, ownership) with a short-circuit branch to suppression, a Guild dispatch node, four tool executors and a write-back into the graph.",
+  "entry": "source",
+  "nodes": [
+    {
+      "id": "source",
+      "kind": "source",
+      "op": "source.advisory",
+      "next": ["reachability"]
+    },
+    {
+      "id": "reachability",
+      "kind": "cypher",
+      "op": "traverse.reachability",
+      "params": { "max_depth": 5 },
+      "next": ["suppress_check"]
+    },
+    {
+      "id": "suppress_check",
+      "kind": "branch",
+      "op": "branch.suppress",
+      "params": { "to": "writeback" },
+      "branches": [
+        { "when": "paths == 0", "to": "writeback" },
+        { "when": "else", "to": "deployment" }
+      ]
+    },
+    {
+      "id": "deployment",
+      "kind": "cypher",
+      "op": "traverse.deployment",
+      "next": ["obligation"]
+    },
+    {
+      "id": "obligation",
+      "kind": "cypher",
+      "op": "traverse.obligation",
+      "next": ["precedent"]
+    },
+    {
+      "id": "precedent",
+      "kind": "cypher",
+      "op": "traverse.precedent",
+      "next": ["ownership"]
+    },
+    {
+      "id": "ownership",
+      "kind": "cypher",
+      "op": "traverse.ownership",
+      "next": ["dispatch"]
+    },
+    {
+      "id": "dispatch",
+      "kind": "agent",
+      "op": "agent.dispatch",
+      "next": ["open_pr"]
+    },
+    {
+      "id": "open_pr",
+      "kind": "tool",
+      "op": "tool.open_pr",
+      "next": ["page_oncall"]
+    },
+    {
+      "id": "page_oncall",
+      "kind": "tool",
+      "op": "tool.page_oncall",
+      "next": ["notify_customer"]
+    },
+    {
+      "id": "notify_customer",
+      "kind": "tool",
+      "op": "tool.notify_customer",
+      "next": ["open_ticket"]
+    },
+    {
+      "id": "open_ticket",
+      "kind": "tool",
+      "op": "tool.open_ticket",
+      "next": ["writeback"]
+    },
+    {
+      "id": "writeback",
+      "kind": "writeback",
+      "op": "writeback.graph",
+      "next": ["done"]
+    },
+    {
+      "id": "done",
+      "kind": "sink",
+      "op": "sink.done"
+    }
+  ],
+  "handles": [
+    { "ecosystem": "npm", "severity_band": "high", "depth_band": "deep" },
+    { "ecosystem": "npm", "severity_band": "critical", "depth_band": "deep" },
+    { "ecosystem": "npm", "severity_band": "high", "depth_band": "none" }
+  ]
+}
