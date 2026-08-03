@@ -7,9 +7,12 @@
  * The SDK is the npm package `rocketride` (v1.3.0) — `@rocketride/sdk` is a 404.
  * With MOCK=false and ROCKETRIDE_AUTH set, each run compiles its spec into a
  * real RocketRide pipeline object and loads it on https://api.rocketride.ai at
- * runtime (§4.3, verified). The traversal itself executes here against the
+ * runtime (§4.3, verified live). The traversal itself executes here against the
  * ports; the remote task is the traced dispatch, and any failure falls back to
  * local silently. Pipelines stay portable JSON either way.
+ *
+ * The bridge holds a persistent websocket, so a long-lived host should call
+ * `closeRuntime(runtime)` on shutdown.
  */
 export {
   closeRuntime,

@@ -47,6 +47,29 @@ function line(msg: string): void {
   console.log(`    ${msg}`);
 }
 
+function skip(name: string, detail: string): void {
+  console.log(`    SKIP  ${name} — ${detail}`);
+}
+
+/**
+ * Every package name reachable from the seeded roots, read out of the graph
+ * package's deps.dev cache. Not our fixture, so treat it as optional.
+ */
+function seededClosure(): Set<string> | null {
+  interface DepsDev {
+    roots?: Record<string, { response?: { nodes?: Array<{ versionKey?: { name?: string } }> } }>;
+  }
+  const raw = readJson<DepsDev>('fixtures/depsdev.json');
+  if (!raw?.roots) return null;
+  const names = new Set<string>();
+  for (const root of Object.values(raw.roots)) {
+    for (const node of root.response?.nodes ?? []) {
+      if (node.versionKey?.name) names.add(node.versionKey.name);
+    }
+  }
+  return names.size > 0 ? names : null;
+}
+
 function check(name: string, ok: boolean, detail: string): boolean {
   if (ok) {
     passed += 1;
@@ -68,8 +91,10 @@ function sleep(ms: number): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  // MOCK must be *explicitly* true to force the offline path. Unset means the
-  // gate proves live data, which is the whole point of check 1.
+  // MOCK must be *explicitly* true in the SHELL to force the offline path.
+  // Read before loadDotEnv() on purpose: the repo-root .env carries MOCK=true
+  // as the default for every other package, and the gate must not quietly stop
+  // proving live data because of it. Unset in the shell means prove live.
   const forcedMock = process.env.MOCK === 'true' || process.env.MOCK === '1';
   const started = nowIso();
 
@@ -275,6 +300,27 @@ async function main(): Promise<void> {
     `p99 = ${burstBus.p99().toFixed(3)} ms on the ${burstBus.transport()} transport (sub-millisecond)`,
   );
 
+  // The funnel only tells the truth if the burst does. An estate of six repos
+  // is untouched by the overwhelming majority of npm CVEs, so the pool has to
+  // be dominated by packages this estate genuinely does not depend on.
+  const plan = burstPlan(50);
+  const closure = seededClosure();
+  const distinct = new Set(plan);
+  if (closure) {
+    const inClosure = [...distinct].filter((p) => closure.has(p));
+    const ratio = inClosure.length / distinct.size;
+    line(`pool         ${distinct.size} distinct packages, ${closure.size} in the seeded closure`);
+    line(`overlap      ${inClosure.length}/${distinct.size} (${(ratio * 100).toFixed(1)}%) — ${inClosure.join(', ') || 'none'}`);
+    line(`survivors    ${plan.filter((p) => closure.has(p)).length} of 50 advisories are about packages this estate depends on`);
+    check(
+      'burst pool reflects an estate the CVEs mostly miss',
+      ratio <= 0.1 && inClosure.length === BURST_SURVIVORS,
+      `${(ratio * 100).toFixed(1)}% of the pool is inside the seeded closure (limit 10%), exactly ${BURST_SURVIVORS} intended survivors`,
+    );
+  } else {
+    skip('burst pool vs seeded closure', 'fixtures/depsdev.json not present — cannot verify absence');
+  }
+
   // ── 5 · kv + recall round trip ────────────────────────────────────────────
   head(5, 'kv round trip + memory recall');
   await bus.kvSet('gate', 'probe:1', { hello: 'brace-expansion', n: 42 });
@@ -434,6 +480,44 @@ async function main(): Promise<void> {
     problems.length === 0 && kinds.size >= 5 && negative.ok === false && negative.errors.length >= 4,
     `${total} envelopes across ${kinds.size} event kinds, 0 invalid, and a malformed payload is rejected with ${negative.errors.length} errors`,
   );
+
+  // ── 8 · live LaserData ────────────────────────────────────────────────────
+  // Skipped, never failed, when no endpoint is configured. The moment
+  // LASER_CONNECTION_STRING or LASER_SERVER carries a hostname this lights up
+  // with no further edits.
+  head(8, 'live LaserData transport');
+  if (selection.transport !== 'laserdata') {
+    line(`selected     local — ${selection.reason}`);
+    skip('laserdata round trip', 'no endpoint configured; set LASER_CONNECTION_STRING or LASER_SERVER to enable');
+  } else {
+    const liveBus = createBus();
+    await liveBus.connect();
+    const t = liveBus.transport();
+    line(`endpoint     ${selection.endpoint}  stream "${selection.stream}"`);
+    line(`transport    ${t}${t === 'local' ? ' (degraded — see the warning above)' : ''}`);
+    if (t === 'laserdata') {
+      await liveBus.publish<DecisionEvent>('decisions', {
+        kind: 'decision',
+        ghsa_id: HERO_GHSA,
+        action: 'open_ticket',
+        auto: true,
+        requires_approval: false,
+        status: 'proposed',
+        ts: nowIso(),
+      });
+      await liveBus.kvSet('clocks', 'obligation:gate-probe', { probe: true });
+      const back = await liveBus.kvGet<{ probe: boolean }>('clocks', 'obligation:gate-probe');
+      line(`kv           round trip -> ${JSON.stringify(back)}   p99 ${liveBus.p99().toFixed(3)}ms`);
+      check(
+        'laserdata publish + kv round trip',
+        back?.probe === true && liveBus.history('decisions').length === 1,
+        `published to stream "${selection.stream}" and read the kv value back over Iggy`,
+      );
+    } else {
+      skip('laserdata round trip', 'endpoint configured but unreachable — degraded to local, which is the designed behaviour');
+    }
+    await liveBus.close();
+  }
 
   // reachability sanity — not a numbered gate item but the demo depends on it
   const heroTelemetry = ingest.telemetryFor(HERO_PACKAGE);

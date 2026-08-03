@@ -20,7 +20,12 @@ import { createGraph } from '@hopper/graph';
 import { createBus, createIngest } from '@hopper/ingest';
 import { createAgents } from '@hopper/agents';
 import { createMeta } from '@hopper/meta';
-import { createOrchestrator, createRuntime, createTools } from '@hopper/orchestrate';
+import {
+  closeRuntime,
+  createOrchestrator,
+  createRuntime,
+  createTools,
+} from '@hopper/orchestrate';
 
 export interface Hopper {
   graph: GraphPort;
@@ -45,7 +50,28 @@ export interface BootOptions {
   log?: (msg: string) => void;
 }
 
+/**
+ * Load the repo-root .env without overwriting anything already in the
+ * environment, so `MOCK=false npm run demo` still wins over the file.
+ */
+function loadEnv(): void {
+  try {
+    const before = new Set(Object.keys(process.env));
+    const url = new URL('../../../.env', import.meta.url);
+    process.loadEnvFile(url.pathname);
+    // process.loadEnvFile overwrites; restore anything the shell had set
+    for (const key of before) {
+      const shellValue = shellEnv.get(key);
+      if (shellValue !== undefined) process.env[key] = shellValue;
+    }
+  } catch {
+    /* no .env is a normal, supported state */
+  }
+}
+const shellEnv = new Map(Object.entries(process.env) as Array<[string, string]>);
+
 export async function boot(opts: BootOptions = {}): Promise<Hopper> {
+  loadEnv();
   const mock = opts.mock ?? isMock();
   const log = opts.log ?? ((m: string) => console.log(m));
   const startedAt = new Date().toISOString();
@@ -82,8 +108,17 @@ export async function boot(opts: BootOptions = {}): Promise<Hopper> {
   log(`meta       ${specs.length} pipelines in the graph`);
 
   // ── MOTION OUT ────────────────────────────────────────────────────────────
-  const runtime = createRuntime({ mock });
+  // RocketRide: the bridge turns itself on only when MOCK=false and a key is
+  // present, and latches off after two failures. auth stays in a closure.
+  const runtime = createRuntime({
+    mock,
+    url: process.env.ROCKETRIDE_URI,
+    projectId: process.env.ROCKETRIDE_PROJECT_ID ?? 'hopper',
+  });
   for (const spec of specs) runtime.register(spec);
+  log(
+    `runtime    ${mock ? 'local' : process.env.ROCKETRIDE_AUTH ? 'rocketride bridge armed' : 'local (no key)'} · ${specs.length} specs`,
+  );
 
   const tools = createTools({
     mock,
@@ -136,6 +171,9 @@ export async function boot(opts: BootOptions = {}): Promise<Hopper> {
     async shutdown() {
       await ingest.stop().catch(() => {});
       await orchestrator.stop().catch(() => {});
+      // the RocketRide bridge holds a persistent websocket for mid-demo
+      // reconnects; without this the process never exits.
+      await closeRuntime(runtime).catch(() => {});
       await bus.close().catch(() => {});
       await graph.close().catch(() => {});
     },

@@ -70,8 +70,15 @@ export interface RocketRideBridge {
   connect(): Promise<boolean>;
   /** load a pipeline OBJECT at runtime — the §4.3 call. null on any failure */
   dispatch(pipeline: RocketRidePipeline, name: string): Promise<RemoteTask | null>;
-  /** push the run summary into the task so their trace panel has real content */
-  report(task: RemoteTask, payload: string): Promise<boolean>;
+  /**
+   * Push a payload through the task so their trace panel has real content, and
+   * return whatever the pipeline produced. null on any failure.
+   *
+   * Keep the payload short: every interior component is a real text→text model
+   * invocation, so a long chain with a long payload is slow. The value of the
+   * remote task is the loaded pipeline and its trace, not the throughput.
+   */
+  report(task: RemoteTask, payload: string): Promise<unknown | null>;
   terminate(task: RemoteTask): Promise<void>;
   disconnect(): Promise<void>;
   status(): { enabled: boolean; connected: boolean; failures: number; lastError: string | null };
@@ -83,7 +90,9 @@ export function createRocketRideBridge(opts: BridgeOptions = {}): RocketRideBrid
   const auth = opts.auth ?? process.env.ROCKETRIDE_AUTH ?? process.env.ROCKETRIDE_APIKEY ?? '';
   const uri = opts.uri ?? process.env.ROCKETRIDE_URI ?? 'https://api.rocketride.ai';
   const projectId = opts.projectId ?? process.env.ROCKETRIDE_PROJECT_ID ?? 'hopper';
-  const requestTimeout = opts.requestTimeout ?? 60_000;
+  // fail fast: nothing here is on the critical path, and a hung request is worse
+  // than a missing one
+  const requestTimeout = opts.requestTimeout ?? 30_000;
   const maxFailures = opts.maxFailures ?? 2;
   const log = opts.log ?? (() => {});
 
@@ -184,13 +193,17 @@ export function createRocketRideBridge(opts: BridgeOptions = {}): RocketRideBrid
     },
 
     async report(task, payload) {
-      if (!client || !task?.token) return false;
+      if (!client || !task?.token) return null;
       try {
-        await client.send(task.token, payload, { name: 'hopper-run.txt' }, 'text/plain');
-        return true;
+        const result = await client.send(
+          task.token,
+          payload,
+          { name: 'hopper-run.txt' },
+          'text/plain',
+        );
+        return result ?? null;
       } catch (e) {
-        fail('send', e);
-        return false;
+        return fail('send', e);
       }
     },
 
