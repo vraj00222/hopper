@@ -1,13 +1,19 @@
 /**
  * HOPPER — @hopper/orchestrate gate.
  *
- * The definition of done for the RocketRide slice. Runs standalone with MOCK=true,
- * no network, no other @hopper package: every collaborator arrives as a port stub
- * from ./testing.
+ * The definition of done for the RocketRide slice. Sections 1–8 run standalone
+ * with MOCK=true, no network, no other @hopper package: every collaborator
+ * arrives as a port stub from ./testing.
  *
  *   npx tsx packages/orchestrate/src/cli/gate.ts
  *
- * Exits 0 only if all eight checks pass.
+ * Section 9 talks to the live RocketRide service. It is SKIPPED (exit still 0)
+ * unless MOCK=false and ROCKETRIDE_AUTH is present:
+ *
+ *   MOCK=false npx tsx packages/orchestrate/src/cli/gate.ts
+ *
+ * Credentials come from the repo-root .env, are never printed, and are never
+ * passed anywhere except the RocketRide client constructor.
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -16,13 +22,27 @@ import path from 'node:path';
 import {
   HERO_ADVISORY,
   SUPPRESSED_ADVISORY,
+  isMock,
   type NodeTrace,
   type PipelineRun,
   type PipelineSpec,
   type RunContext,
 } from '@hopper/contracts';
 
-import { createOrchestrator, createRuntime, createTools } from '../index.js';
+import {
+  closeRuntime,
+  compileToRocketRide,
+  createOrchestrator,
+  createRocketRideBridge,
+  createTools,
+  createRuntime,
+  flushRemote,
+  remoteTaskOf,
+  renderRunForRocketRide,
+  type RemoteTask,
+  type RocketRideBridge,
+} from '../index.js';
+import { CARRIER_PROVIDER, SINK_PROVIDER, SOURCE_PROVIDER } from '../rocketride/index.js';
 import { DEFAULT_SPEC } from '../specs/index.js';
 import { PipelineSpecError } from '../errors.js';
 import { deliveriesOf } from '../tools.js';
@@ -38,7 +58,49 @@ import {
 
 let checks = 0;
 let failures = 0;
+let skipped = 0;
 const proved: string[] = [];
+
+/**
+ * Tiny .env reader — no dependency, no override of anything already exported,
+ * and nothing from it is ever printed.
+ */
+function loadDotEnv(): string[] {
+  const file = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    '..',
+    '..',
+    '..',
+    '..',
+    '.env',
+  );
+  const found: string[] = [];
+  let raw: string;
+  try {
+    raw = readFileSync(file, 'utf8');
+  } catch {
+    return found;
+  }
+  for (const line of raw.split('\n')) {
+    const m = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/.exec(line);
+    if (!m || line.trimStart().startsWith('#')) continue;
+    let value = m[2].trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    found.push(m[1]);
+    if (process.env[m[1]] === undefined) process.env[m[1]] = value;
+  }
+  return found;
+}
+
+function skip(label: string, why: string): void {
+  skipped += 1;
+  console.log(`   SKIP  ${label}  ${why}`);
+}
 
 function head(n: number, title: string): void {
   console.log('');
@@ -322,6 +384,53 @@ async function main(): Promise<void> {
   );
   assert(tools.receipts().length === 5, 'every attempt is receipted', `receipts=${tools.receipts().length}`);
 
+  // 4b ─ the real Guild behaviour: the notice is HELD, the run still escalates ─
+  console.log('');
+  console.log('   — beat 1 with a real HITL hold (approval left pending) —');
+  const gHeld = createStubGraph({ hopPaths: HERO_HOP_PATHS });
+  const aHeld = createStubAgents({ autoApprove: false }); // Guild holds the approval
+  const mHeld = createStubMeta();
+  const tHeld = createTools({ mock: true });
+  const heldRun = await createRuntime({ mock: true, loadPipelineDir: false }).run(
+    DEFAULT_SPEC,
+    HERO_ADVISORY,
+    ctxFor(
+      { graph: gHeld, bus: createStubBus(), agents: aHeld, meta: mHeld, tools: tHeld },
+      'gate: held approval',
+    ),
+  );
+  const heldNotice = heldRun.receipts.find((r) => r.action === 'notify_customer');
+  assert(
+    heldRun.outcome === 'escalated' && heldRun.ok,
+    'a held customer notice does NOT fail the run — outcome stays escalated',
+    `outcome=${heldRun.outcome} ok=${heldRun.ok}`,
+  );
+  assert(
+    heldRun.receipts.length === 4 && heldRun.receipts.filter((r) => r.ok).length === 3,
+    'three actions executed, one held',
+    `${heldRun.receipts.filter((r) => r.ok).length}/4 executed`,
+  );
+  assert(
+    heldNotice !== undefined && !heldNotice.ok && deliveriesOf(tHeld).length === 0,
+    'the customer notice is the held one, and nothing was delivered',
+    heldNotice ? `detail="${heldNotice.detail.slice(0, 60)}..."` : 'no receipt',
+  );
+  assert(
+    heldRun.traces.every((t) => t.kind !== 'tool' || t.summary.length > 0) &&
+      heldRun.traces.some((t) => t.op === 'tool.notify_customer' && !t.ok),
+    'the held action is visible in the trace as a not-ok node',
+  );
+  assert(
+    mHeld.outcomes.length === 1 && mHeld.outcomes[0].ok === true,
+    'the pipeline is still recorded as a success in the meta layer',
+    `recordOutcome ok=${mHeld.outcomes[0]?.ok}`,
+  );
+  assert(
+    aHeld.pendingApprovals().length === 1,
+    'the approval is left pending for a human',
+    `pending=${aHeld.pendingApprovals().length}`,
+  );
+
   // 5 ─ requires() ──────────────────────────────────────────────────────────
   head(5, 'requires() marks the customer notice as human-gated');
   assert(tools.requires('notify_customer') === 'approval', "requires('notify_customer') === 'approval'");
@@ -409,10 +518,145 @@ async function main(): Promise<void> {
     mBoth.outcomes.map((o) => `${o.pipelineId}:${o.latencyMs.toFixed(1)}ms:${o.ok}`).join(' '),
   );
 
+  // 9 ─ the live RocketRide service ────────────────────────────────────────
+  head(9, 'live RocketRide — a pipeline object loaded at runtime (§4.3)');
+
+  const envKeys = loadDotEnv();
+  const auth = process.env.ROCKETRIDE_AUTH ?? process.env.ROCKETRIDE_APIKEY ?? '';
+  const uri = process.env.ROCKETRIDE_URI ?? 'https://api.rocketride.ai';
+  const live = !isMock() && auth.length > 0;
+  console.log(
+    `        .env: ${envKeys.length} keys, ` +
+      `${envKeys.filter((k) => k.startsWith('ROCKETRIDE_')).join(' ') || 'no ROCKETRIDE_* keys'} · ` +
+      `credential present: ${auth.length > 0} · MOCK=${isMock()}`,
+  );
+
+  // the compile step is pure — it is checked either way
+  const compiled = compileToRocketRide(DEFAULT_SPEC, HERO_ADVISORY, { projectId: 'hopper' });
+  const compIds = compiled.components.map((c) => c.id);
+  assert(
+    compiled.components[0].provider === SOURCE_PROVIDER &&
+      compiled.components[compiled.components.length - 1].provider === SINK_PROVIDER,
+    'compiles to a webhook ingress and a response_text egress',
+    `${compiled.components[0].provider} … ${compiled.components[compiled.components.length - 1].provider}`,
+  );
+  assert(
+    compiled.components.slice(1, -1).every((c) => c.provider === CARRIER_PROVIDER),
+    'every interior stage uses the verified text->text carrier',
+    `${CARRIER_PROVIDER} x${compiled.components.length - 2}`,
+  );
+  assert(
+    compiled.components.slice(1).every((c) => (c.input ?? []).every((i) => i.lane === 'text')) &&
+      compiled.components.slice(1).every((c) => (c.input ?? []).length === 1),
+    "every input is on the 'text' DATA LANE (not a port name)",
+  );
+  assert(
+    new Set(compIds).size === compIds.length && compiled.source === compIds[0],
+    'component ids are unique per dispatch and source points at the ingress',
+    `source=${compiled.source}`,
+  );
+  assert(
+    compiled.components.some((c) => c.name === 'traverse.reachability') &&
+      compiled.components.some((c) => c.name === 'traverse.ownership'),
+    'components are named as the traversal stages, so their panel reads right (R7)',
+    compiled.components.map((c) => c.name).slice(0, 7).join(' -> '),
+  );
+
+  if (!live) {
+    skip(
+      'live service checks',
+      auth.length === 0
+        ? 'ROCKETRIDE_AUTH not set'
+        : 'MOCK=true — rerun with MOCK=false to exercise the live service',
+    );
+  } else {
+    const t0 = performance.now();
+    const bridge = createRocketRideBridge({
+      auth,
+      uri,
+      projectId: process.env.ROCKETRIDE_PROJECT_ID ?? 'hopper',
+      log: (m) => console.log(`        ${m}`),
+    });
+    const connected = await bridge.connect();
+    assert(connected && bridge.connected(), `connect() to ${uri}`, `${(performance.now() - t0).toFixed(0)}ms`);
+
+    let task: RemoteTask | null = null;
+    if (connected) {
+      const t1 = performance.now();
+      task = await bridge.dispatch(compiled, `HOPPER gate · ${HERO_ADVISORY.ghsa_id}`);
+      assert(
+        task !== null && typeof task.token === 'string' && task.token.length > 0,
+        'use({ pipeline }) accepted a pipeline OBJECT at runtime and returned a task token',
+        task
+          ? `id=${task.id} source=${task.source} project=${task.projectId} ` +
+            `token=${task.token.length}ch publicToken=${task.publicToken?.length ?? 0}ch ` +
+            `in ${(performance.now() - t1).toFixed(0)}ms`
+          : `failed: ${bridge.status().lastError}`,
+      );
+    }
+
+    if (task) {
+      const reported = await bridge.report(task, renderRunForRocketRide(escRun));
+      assert(reported, 'the run was pushed into the live task for their trace panel');
+      await bridge.terminate(task);
+      assert(bridge.status().failures === 0, 'terminate() clean', `failures=${bridge.status().failures}`);
+    }
+
+    await bridge.disconnect();
+    assert(!bridge.connected(), 'disconnect() clean');
+
+    // the demo must survive their service being down
+    const deadBridge: RocketRideBridge = {
+      enabled: () => true,
+      connected: () => false,
+      connect: async () => false,
+      dispatch: async () => null,
+      report: async () => false,
+      terminate: async () => {},
+      disconnect: async () => {},
+      status: () => ({ enabled: true, connected: false, failures: 9, lastError: 'forced failure' }),
+    };
+    const failing = createRuntime({
+      mock: false,
+      remote: true,
+      bridge: deadBridge,
+      loadPipelineDir: false,
+    });
+    const fallbackRun = await failing.run(
+      DEFAULT_SPEC,
+      HERO_ADVISORY,
+      ctxFor(
+        {
+          graph: createStubGraph({ hopPaths: HERO_HOP_PATHS }),
+          bus: createStubBus(),
+          agents: createStubAgents(),
+          meta: createStubMeta(),
+          tools: createTools({ mock: true }),
+        },
+        'gate: forced remote failure',
+      ),
+    );
+    assert(
+      fallbackRun.outcome === escRun.outcome &&
+        fallbackRun.traces.map((t) => t.node_id).join(',') ===
+          escRun.traces.map((t) => t.node_id).join(','),
+      'with the remote forced to fail, the local run is identical',
+      `outcome=${fallbackRun.outcome} nodes=${fallbackRun.traces.length}`,
+    );
+    assert(
+      remoteTaskOf(failing, fallbackRun.run_id) === null,
+      'no remote task is attributed to a run that never reached the service',
+    );
+    await flushRemote(failing);
+    await closeRuntime(failing);
+  }
+
   // ─── verdict ───────────────────────────────────────────────────────────
   console.log('');
   console.log('─'.repeat(72));
-  console.log(`${checks - failures}/${checks} checks passed`);
+  console.log(
+    `${checks - failures}/${checks} checks passed${skipped > 0 ? ` · ${skipped} skipped` : ''}`,
+  );
   if (failures > 0) {
     console.log(`GATE FAILED · ${failures} failing`);
     process.exit(1);
@@ -423,9 +667,17 @@ async function main(): Promise<void> {
   console.log('  · zero hops short-circuits to write-back at near-zero cost and zero tokens');
   console.log('  · four tool executors receipt every attempt; the customer notice cannot');
   console.log('    report success without an approval token');
+  console.log('  · a held approval does not fail the run: 3 executed, 1 held, still escalated');
   console.log('  · the router dedupes, classifies, lets the graph select the pipeline,');
   console.log('    and keeps an accurate funnel');
   console.log('  · write-back closes the loop into the graph and the meta layer');
+  console.log('  · our spec compiles to a real RocketRide pipeline: webhook -> five named');
+  console.log('    stages -> response_text, all on the text lane');
+  if (live) {
+    console.log('  · the live service accepted that pipeline OBJECT at runtime and returned a');
+    console.log('    task token — §4.3 needs no pre-registered pipeline ids');
+    console.log('  · with the remote forced to fail, the local run is byte-for-byte the same');
+  }
   process.exit(0);
 }
 

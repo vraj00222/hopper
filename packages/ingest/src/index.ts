@@ -15,17 +15,68 @@ import type { EventBusPort } from '@hopper/contracts';
 
 import { LaserDataBus } from './bus/laserdata.js';
 import { LocalBus } from './bus/local.js';
+import { loadDotEnv, resolveLaserConfig } from './env.js';
+
+export interface BusSelection {
+  transport: 'laserdata' | 'local';
+  /** why, in one line, safe to print — never contains a credential */
+  reason: string;
+  endpoint: string | null;
+  stream: string;
+  mock: boolean;
+}
+
+/**
+ * What createBus() would pick, and why. Printed by the gate and the server
+ * banner so a misconfigured endpoint is visible before anything depends on it.
+ */
+export function busSelection(opts?: { url?: string; mock?: boolean }): BusSelection {
+  loadDotEnv();
+  const cfg = resolveLaserConfig();
+  const mock = opts?.mock ?? isMock();
+  const url = opts?.url ?? cfg.connectionString;
+  const endpoint = opts?.url ? null : cfg.endpoint;
+  if (!url) return { transport: 'local', reason: cfg.reason, endpoint: null, stream: cfg.stream, mock };
+  if (mock) {
+    return {
+      transport: 'local',
+      reason: `endpoint configured (${endpoint ?? 'explicit url'}) but MOCK is on — local transport`,
+      endpoint,
+      stream: cfg.stream,
+      mock,
+    };
+  }
+  return {
+    transport: 'laserdata',
+    reason: opts?.url ? 'explicit url passed to createBus()' : cfg.reason,
+    endpoint,
+    stream: cfg.stream,
+    mock,
+  };
+}
 
 export function createBus(opts?: { url?: string; mock?: boolean }): EventBusPort {
-  const url = opts?.url ?? process.env.LASER_URL;
+  loadDotEnv();
+  const cfg = resolveLaserConfig();
+  const url = opts?.url ?? cfg.connectionString;
   const mock = opts?.mock ?? isMock();
-  // laserdata is used only when we have a URL *and* we are not in mock mode
-  if (url && !mock) return new LaserDataBus(url);
+  // laserdata is used only when we have an endpoint *and* we are not in mock mode
+  if (url && !mock) return new LaserDataBus(url, cfg.stream);
   return new LocalBus();
 }
 
 export { createIngest, HopperIngest } from './ingest.js';
 export type { IngestOptions, PullReport } from './ingest.js';
+export {
+  BURST_ABSENT_PACKAGES,
+  BURST_SURVIVOR_PACKAGES,
+  BURST_SURVIVORS,
+  burstPlan,
+  syntheticAdvisory,
+} from './ingest.js';
+
+export { loadDotEnv, resolveLaserConfig, redactEndpoint, DEFAULT_IGGY_PORT } from './env.js';
+export type { LaserConfig } from './env.js';
 
 export { LocalBus, busInternals, scoreText } from './bus/local.js';
 export type { BusInternals } from './bus/local.js';

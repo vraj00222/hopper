@@ -26,9 +26,9 @@ import type {
   Unsubscribe,
 } from '@hopper/contracts';
 
+import { DEFAULT_STREAM } from '../env.js';
 import { LocalBus, type BusInternals } from './local.js';
 
-const STREAM = 'hopper';
 const PARTITIONS = 4;
 
 /**
@@ -48,10 +48,10 @@ class LaserTimeout extends Error {
 
 /**
  * TCP pre-flight. An abandoned Laser.connect() keeps retrying in the
- * background and holds the event loop open, so a bad LASER_URL must never
- * reach the SDK at all. Connection strings look like
- * `iggy://user:pass@host:port` (scheme and credentials both optional), and
- * Iggy's TCP port defaults to 8090.
+ * background and holds the event loop open, so a bad endpoint must never reach
+ * the SDK at all. Connection strings look like `iggy://user:pass@host:port`
+ * (scheme and credentials both optional) — LaserData Cloud hosts are shaped
+ * `starter-123.us-west-1.aws.laserdata.cloud:8090`. Iggy's TCP port is 8090.
  */
 export function parseEndpoint(connectionString: string): { host: string; port: number } | null {
   const trimmed = connectionString.trim().replace(/^iggy(\+\w+)?:\/\//i, '');
@@ -158,13 +158,16 @@ export class LaserDataBus implements EventBusPort, BusInternals {
   private degraded = false;
   private logged = false;
 
-  constructor(private readonly url: string) {}
+  constructor(
+    private readonly url: string,
+    private readonly stream: string = DEFAULT_STREAM,
+  ) {}
 
   async connect(): Promise<void> {
     await this.local.connect();
     try {
       const endpoint = parseEndpoint(this.url);
-      if (!endpoint) throw new Error(`LASER_URL is not a connection string: "${this.url}"`);
+      if (!endpoint) throw new Error('the configured LaserData endpoint is not a valid connection string');
       await probeEndpoint(endpoint.host, endpoint.port, CONNECT_TIMEOUT_MS);
 
       const mod = (await withTimeout(
@@ -191,12 +194,12 @@ export class LaserDataBus implements EventBusPort, BusInternals {
       );
       const laser = await withTimeout('Laser.connect', CONNECT_TIMEOUT_MS, attempt);
       this.client = laser;
-      const stream = laser.stream(STREAM);
+      const handle = laser.stream(this.stream);
       for (const t of TOPICS) {
-        await withTimeout(`topic(${t}).ensure`, OP_TIMEOUT_MS, stream.topic(t).ensure(PARTITIONS));
+        await withTimeout(`topic(${t}).ensure`, OP_TIMEOUT_MS, handle.topic(t).ensure(PARTITIONS));
       }
       console.log(
-        `[ingest] laserdata connected — stream "${STREAM}", ${TOPICS.length} topics x ${PARTITIONS} partitions`,
+        `[ingest] laserdata connected — stream "${this.stream}", ${TOPICS.length} topics x ${PARTITIONS} partitions`,
       );
     } catch (err) {
       this.degrade(err);
@@ -232,7 +235,7 @@ export class LaserDataBus implements EventBusPort, BusInternals {
         await withTimeout(
           `publish(${topic})`,
           OP_TIMEOUT_MS,
-          laser.stream(STREAM).topic(topic).publish().json(env).send(),
+          laser.stream(this.stream).topic(topic).publish().json(env).send(),
         );
       } catch (err) {
         this.degrade(err);
@@ -301,7 +304,7 @@ export class LaserDataBus implements EventBusPort, BusInternals {
         const items = await withTimeout(
           'recall',
           OP_TIMEOUT_MS,
-          laser.memory(namespace).recall().application(STREAM).semantic(q).limit(20).fetch(),
+          laser.memory(namespace).recall().application(this.stream).semantic(q).limit(20).fetch(),
         );
         if (items.length > 0) {
           return items.map((i) => ({ text: dec.decode(i.payload), score: i.score ?? 0 }));
@@ -338,7 +341,7 @@ export class LaserDataBus implements EventBusPort, BusInternals {
     void withTimeout(
       'remember',
       OP_TIMEOUT_MS,
-      laser.memory(namespace).remember(enc.encode(text)).application(STREAM).send(),
+      laser.memory(namespace).remember(enc.encode(text)).application(this.stream).send(),
     ).catch((err: unknown) => this.degrade(err));
   }
 
