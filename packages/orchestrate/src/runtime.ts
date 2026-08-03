@@ -1,16 +1,28 @@
 /**
- * The RocketRide-compatible pipeline runtime.
+ * The pipeline runtime.
  *
- * `@rocketride/sdk` is not published (npm 404 as of build day), so this is a
- * real local implementation of the same contract rather than a faked dependency:
- * pipelines are portable JSON `.pipe` specs, executed node-by-node from
+ * Pipelines are portable JSON `.pipe` specs, executed node by node from
  * `spec.entry` along `next[]`/`branches[]`, with per-node tracing of latency and
- * token spend. It sits behind `PipelineRuntimePort`, so a real SDK drops in
- * without touching a caller.
+ * token spend. It sits behind `PipelineRuntimePort`.
  *
- * If `MOCK=false` and `ROCKETRIDE_URL` is set, `run()` first offers the spec to
- * that server over HTTP and falls back to the local executor on any failure —
- * the demo never depends on a service that may not answer.
+ * ── Where the real RocketRide sits ───────────────────────────────────────────
+ *
+ * With `MOCK=false` and `ROCKETRIDE_AUTH` set, every run also compiles its spec
+ * into a real RocketRide pipeline object and loads it on the live service with
+ * `client.use({ pipeline })` — the §4.3 call, verified working: a pipeline that
+ * was never registered in advance, handed over at runtime, comes back with a
+ * real task token. The graph really does choose the harness.
+ *
+ * The traversal itself still executes here, against the ports. That is not a
+ * shortcut, it is the only honest arrangement: no RocketRide provider runs our
+ * Cypher, calls Guild, or opens a PR through `ToolsPort`. So the remote task is
+ * a real, traceable dispatch of the selected pipeline — their engine, their
+ * canvas, their trace panel (R7) — and the per-node results we push into it come
+ * from the local execution. Anything else would be theatre.
+ *
+ * The dispatch runs concurrently with the local execution and is never awaited
+ * on the critical path. On any failure the bridge latches off and logs once. The
+ * demo does not depend on somebody else's uptime.
  */
 import {
   isMock,
@@ -28,6 +40,12 @@ import { PipelineRunError, PipelineSpecError } from './errors.js';
 import { evaluate, isElse, validateExpression } from './expr.js';
 import { createRegistry, type OpHandler, type OpRegistry } from './ops/index.js';
 import type { RunState } from './ops/types.js';
+import { compileToRocketRide } from './rocketride/compile.js';
+import {
+  createRocketRideBridge,
+  type RemoteTask,
+  type RocketRideBridge,
+} from './rocketride/client.js';
 import { DEFAULT_SPEC, readSpecDir } from './specs/index.js';
 
 const KINDS = new Set([
@@ -159,7 +177,21 @@ function validate(spec: unknown, registry: OpRegistry): PipelineSpec {
 
 export interface RuntimeOptions {
   mock?: boolean;
+  /** RocketRide service URI. Cloud is https://api.rocketride.ai (NOT cloud.*) */
   url?: string;
+  /** RocketRide API key. Defaults to ROCKETRIDE_AUTH / ROCKETRIDE_APIKEY. Never logged. */
+  auth?: string;
+  projectId?: string;
+  /**
+   * Base for `traceUrl()`. Deliberately NOT derived from the API URI: that host
+   * serves the DAP websocket, not a trace page, and a link that 404s on stage is
+   * worse than no link.
+   */
+  traceBase?: string;
+  /** force the RocketRide bridge on/off; default is (!mock && auth present) */
+  remote?: boolean;
+  /** inject a bridge (the gate uses this to force a remote failure) */
+  bridge?: RocketRideBridge;
   /** extra op handlers, registered alongside the built-ins */
   ops?: Record<string, OpHandler>;
   /**
@@ -170,15 +202,70 @@ export interface RuntimeOptions {
   maxRuns?: number;
 }
 
+/** run_id → the real RocketRide task it was dispatched to, when there was one */
+const REMOTE_TASKS = new WeakMap<object, Map<string, RemoteTask>>();
+/** in-flight report/terminate work, so a caller can await it deterministically */
+const REMOTE_SETTLES = new WeakMap<object, Promise<unknown>[]>();
+const BRIDGES = new WeakMap<object, RocketRideBridge>();
+
+/** The RocketRide task a run was dispatched to, if any. */
+export function remoteTaskOf(runtime: PipelineRuntimePort, runId: string): RemoteTask | null {
+  return REMOTE_TASKS.get(runtime as unknown as object)?.get(runId) ?? null;
+}
+
+/** Await every outstanding remote report/terminate. */
+export async function flushRemote(runtime: PipelineRuntimePort): Promise<void> {
+  const pending = REMOTE_SETTLES.get(runtime as unknown as object);
+  if (!pending || pending.length === 0) return;
+  const batch = [...pending];
+  pending.length = 0;
+  await Promise.allSettled(batch);
+}
+
+/** Disconnect the RocketRide bridge. Safe to call when there never was one. */
+export async function closeRuntime(runtime: PipelineRuntimePort): Promise<void> {
+  await flushRemote(runtime);
+  await BRIDGES.get(runtime as unknown as object)?.disconnect();
+}
+
+/** what we push into the remote task — the run, legibly, for their trace panel */
+export function renderRunForRocketRide(run: PipelineRun): string {
+  const lines = [
+    `HOPPER run ${run.run_id}`,
+    `pipeline ${run.pipeline_id} · advisory ${run.ghsa_id} · class ${run.advisory_class}`,
+    `outcome ${run.outcome} · ${run.latency_ms.toFixed(1)}ms · ` +
+      `${run.traces.reduce((a, t) => a + t.tokens, 0)} tokens · ${run.receipts.length} receipts`,
+    `selected because: ${run.selection_reason}`,
+    '',
+  ];
+  for (const [i, t] of run.traces.entries()) {
+    lines.push(
+      `${String(i + 1).padStart(2)} ${t.op.padEnd(24)} ${t.latency_ms.toFixed(1).padStart(8)}ms ` +
+        `${String(t.tokens).padStart(5)}tok ${t.short_circuit ? '[short-circuit] ' : ''}${t.summary}`,
+    );
+  }
+  return lines.join('\n');
+}
+
 export function createRuntime(opts: RuntimeOptions = {}): PipelineRuntimePort {
   const registry = createRegistry(opts.ops);
   const mock = opts.mock ?? isMock();
-  const url = opts.url ?? process.env.ROCKETRIDE_URL ?? '';
+  const uri = opts.url ?? process.env.ROCKETRIDE_URI ?? 'https://api.rocketride.ai';
+  const auth = opts.auth ?? process.env.ROCKETRIDE_AUTH ?? process.env.ROCKETRIDE_APIKEY ?? '';
+  const projectId = opts.projectId ?? process.env.ROCKETRIDE_PROJECT_ID ?? 'hopper';
+  const traceBase = opts.traceBase ?? process.env.ROCKETRIDE_TRACE_BASE ?? 'http://localhost:7788';
   const maxRuns = opts.maxRuns ?? 200;
 
   const specs = new Map<string, PipelineSpec>();
   const history: PipelineRun[] = [];
-  let remoteDown = false;
+  const remoteTasks = new Map<string, RemoteTask>();
+  const settles: Promise<unknown>[] = [];
+
+  // real RocketRide only with MOCK=false and a credential present
+  const useRemote = opts.remote ?? (!mock && (auth.length > 0 || opts.bridge !== undefined));
+  const bridge: RocketRideBridge | null = useRemote
+    ? (opts.bridge ?? createRocketRideBridge({ auth, uri, projectId }))
+    : null;
 
   function register(spec: PipelineSpec): void {
     const valid = validate(spec, registry);
@@ -209,42 +296,49 @@ export function createRuntime(opts: RuntimeOptions = {}): PipelineRuntimePort {
     }
   }
 
-  /** R7 — the trace lives in RocketRide's own observability panel when it is up */
+  /**
+   * R7 — RocketRide's own observability panel is where the run should be read.
+   *
+   * We do NOT synthesise a cloud URL here. `use()` returns `id`, `token`,
+   * `publicToken` and `projectId`, but neither the SDK nor the published docs
+   * define a shareable trace-page URL for them, and inventing one would put a
+   * 404 on stage. Use `remoteTaskOf(runtime, runId)` for the real identifiers;
+   * this returns a local trace reference only.
+   */
   function traceUrl(id: string): string {
-    const base = url || 'http://localhost:7788';
-    return `${base.replace(/\/$/, '')}/traces/${id}`;
+    return `${traceBase.replace(/\/$/, '')}/traces/${id}`;
   }
 
   /**
-   * Offer the run to a real RocketRide server. Only ever attempted with
-   * MOCK=false and ROCKETRIDE_URL set; any failure falls back to local
-   * execution and is never fatal.
+   * §4.3 — compile the selected spec and load it on the live service at runtime.
+   * Started before local execution and never awaited on the critical path.
+   * Resolves null on any failure; the bridge swallows and latches.
    */
-  async function tryRemote(
+  function dispatchRemote(
     spec: PipelineSpec,
     advisory: Advisory,
     ctx: RunContext,
-  ): Promise<PipelineRun | null> {
-    if (mock || !url || remoteDown) return null;
+  ): Promise<RemoteTask | null> | null {
+    if (!bridge || !bridge.enabled()) return null;
+    let compiled;
     try {
-      const res = await fetch(`${url.replace(/\/$/, '')}/v1/pipelines/run`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ spec, input: { advisory, advisory_class: ctx.advisory_class } }),
-        signal: AbortSignal.timeout(2500),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const run = (await res.json()) as PipelineRun;
-      if (!run || !Array.isArray(run.traces)) throw new Error('malformed run payload');
-      ctx.log(`rocketride: remote run ${run.run_id} via ${url}`);
-      return run;
+      compiled = compileToRocketRide(spec, advisory, { projectId });
     } catch (e) {
-      remoteDown = true;
-      ctx.log(
-        `rocketride: ${url} unavailable (${(e as Error).message}) — executing locally`,
-      );
+      ctx.log(`rocketride: compile failed (${(e as Error).message}) — executing locally only`);
       return null;
     }
+    return bridge
+      .dispatch(compiled, `HOPPER ${advisory.ghsa_id} · ${spec.id}`)
+      .then((task) => {
+        if (task) {
+          ctx.log(
+            `rocketride: task ${task.id ?? task.source ?? 'started'} loaded from spec_json at runtime ` +
+              `(${compiled.components.length} components)`,
+          );
+        }
+        return task;
+      })
+      .catch(() => null);
   }
 
   async function run(
@@ -255,11 +349,8 @@ export function createRuntime(opts: RuntimeOptions = {}): PipelineRuntimePort {
     const valid = validate(spec, registry);
     specs.set(valid.id, valid);
 
-    const remote = await tryRemote(valid, advisory, ctx);
-    if (remote) {
-      history.push(remote);
-      return remote;
-    }
+    // fired first, awaited last — the traversal never waits on the network
+    const remotePending = dispatchRemote(valid, advisory, ctx);
 
     const id = runId();
     const startedWall = nowIso();
@@ -399,12 +490,29 @@ export function createRuntime(opts: RuntimeOptions = {}): PipelineRuntimePort {
         `${traces.reduce((a, t) => a + t.tokens, 0)} tokens · ${receiptCount} receipts`,
     );
 
+    // attach the remote task if it has landed, then push the run into it and
+    // release it — all off the measured path, all failure-tolerant
+    if (remotePending && bridge) {
+      const settle = remotePending.then(async (task) => {
+        if (!task) return;
+        remoteTasks.set(id, task);
+        await bridge.report(task, renderRunForRocketRide(run));
+        await bridge.terminate(task);
+      });
+      settles.push(settle.catch(() => undefined));
+      const landed = await Promise.race([
+        remotePending,
+        new Promise<null>((r) => setTimeout(() => r(null), 3000)),
+      ]);
+      if (landed) remoteTasks.set(id, landed);
+    }
+
     history.push(run);
     if (history.length > maxRuns) history.splice(0, history.length - maxRuns);
     return run;
   }
 
-  return {
+  const port: PipelineRuntimePort = {
     register,
     registered: () => [...specs.values()],
     loadFromJson,
@@ -412,4 +520,9 @@ export function createRuntime(opts: RuntimeOptions = {}): PipelineRuntimePort {
     runs: () => [...history],
     traceUrl,
   };
+
+  REMOTE_TASKS.set(port as unknown as object, remoteTasks);
+  REMOTE_SETTLES.set(port as unknown as object, settles);
+  if (bridge) BRIDGES.set(port as unknown as object, bridge);
+  return port;
 }

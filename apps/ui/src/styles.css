@@ -648,7 +648,7 @@ body {
 .audit-toggle:hover { color: var(--paper); }
 .audit-count { font-family: var(--mono); font-size: 10px; color: var(--ink-faint); }
 
-.audit-list { margin-top: 10px; max-height: 156px; }
+.audit-list { margin-top: 10px; max-height: 130px; }
 .audit-row {
   display: grid;
   grid-template-columns: 62px 74px minmax(0, 1fr);

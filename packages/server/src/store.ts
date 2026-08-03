@@ -139,6 +139,51 @@ export class Store {
     this.emit({ type: 'run', run });
     this.emit({ type: 'funnel', funnel: this.hopper.orchestrator.funnel() });
     this.focusId = run.ghsa_id;
+    void this.startObligationClocks(run);
+  }
+
+  /**
+   * An obligation with no clock is just a note. The moment a traversal lands on
+   * a breach-notification clause, the countdown starts — and it starts from
+   * when the advisory was PUBLISHED, not from when we got round to looking,
+   * because that is how the clause reads.
+   */
+  private async startObligationClocks(run: PipelineRun): Promise<void> {
+    if (run.outcome !== 'escalated') return;
+
+    const clauses = run.agent_result?.obligation.obligated
+      ? run.agent_result.obligation.clauses.map((c) => ({
+          customer: c.customer,
+          window_hours: c.hours,
+          clause_ref: c.clause_ref,
+        }))
+      : run.hop_paths.map((p) => ({
+          customer: p.customer,
+          window_hours: p.notice_window,
+          clause_ref: p.clause_ref,
+        }));
+
+    // the clause reads "within N hours of publication", and the agents compute
+    // deadline = published_at + hours, so the clock must agree with them.
+    const publishedAt = this.feed.get(run.ghsa_id)?.published_at;
+
+    const seen = new Set<string>();
+    for (const c of clauses) {
+      const key = `${run.ghsa_id}:${c.customer}`;
+      if (seen.has(key) || this.clocks.has(key)) continue;
+      seen.add(key);
+      await this.hopper.ingest
+        .startClock({
+          ghsa_id: run.ghsa_id,
+          customer: c.customer,
+          window_hours: c.window_hours,
+          clause_ref: c.clause_ref,
+          started_at: publishedAt,
+        })
+        .catch(() => {
+          /* a clock that will not start must not take the arc down */
+        });
+    }
   }
 
   /** the signature animation: one ring per 300ms, driven server-side so the

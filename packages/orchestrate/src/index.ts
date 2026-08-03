@@ -4,13 +4,37 @@
  * PipelineRuntimePort + OrchestratorPort + ToolsPort. Depends on
  * @hopper/contracts and nothing else; every collaborator arrives as a port.
  *
- * Note on the SDK: `@rocketride/sdk` is not published (npm 404), so this package
- * is a RocketRide-compatible runtime rather than a wrapper around one — portable
- * JSON `.pipe` specs, executed node-by-node, with per-node latency and token
- * tracing. `createRuntime({ mock: false, url })` (or MOCK=false + ROCKETRIDE_URL)
- * offers each run to a real server first and falls back to the local executor.
+ * The SDK is the npm package `rocketride` (v1.3.0) — `@rocketride/sdk` is a 404.
+ * With MOCK=false and ROCKETRIDE_AUTH set, each run compiles its spec into a
+ * real RocketRide pipeline object and loads it on https://api.rocketride.ai at
+ * runtime (§4.3, verified). The traversal itself executes here against the
+ * ports; the remote task is the traced dispatch, and any failure falls back to
+ * local silently. Pipelines stay portable JSON either way.
  */
-export { createRuntime, type RuntimeOptions } from './runtime.js';
+export {
+  closeRuntime,
+  createRuntime,
+  flushRemote,
+  remoteTaskOf,
+  renderRunForRocketRide,
+  type RuntimeOptions,
+} from './runtime.js';
+export {
+  compileToRocketRide,
+  createRocketRideBridge,
+  CARRIER_PROVIDER,
+  LANE,
+  SINK_PROVIDER,
+  SOURCE_PROVIDER,
+} from './rocketride/index.js';
+export type {
+  BridgeOptions,
+  CompileOptions,
+  RemoteTask,
+  RocketRideBridge,
+  RocketRideComponent,
+  RocketRidePipeline,
+} from './rocketride/index.js';
 export { createTools, deliveriesOf, isValidApprovalToken, type ToolsOptions } from './tools.js';
 export { createOrchestrator, type OrchestratorDeps } from './router.js';
 
