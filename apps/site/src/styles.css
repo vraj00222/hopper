@@ -1719,14 +1719,25 @@ p {
 
 /* ── reveal ───────────────────────────────────────────────────────────────── */
 
+/* Content is visible by default and the reveal is pure enhancement.
+   Hiding first and revealing on scroll means any failure in the reveal path —
+   a missed observer callback, a jump past the element via a nav anchor, a
+   restored scroll position — leaves a section permanently blank. That trade is
+   never worth a fade. The hidden state is only armed once JS has confirmed it
+   can drive it, via .js-reveal on the root. */
 .rise {
+  opacity: 1;
+  transform: none;
+}
+
+.js-reveal .rise {
   opacity: 0;
   transform: translateY(14px);
   transition: opacity 640ms cubic-bezier(0.2, 0.7, 0.2, 1),
     transform 640ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.rise.is-on {
+.js-reveal .rise.is-on {
   opacity: 1;
   transform: none;
 }

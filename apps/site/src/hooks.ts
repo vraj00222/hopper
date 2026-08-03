@@ -18,9 +18,20 @@ export function useReducedMotion(): boolean {
   return reduced;
 }
 
-/** Latches true the first time the element crosses into view and stays true. */
+/**
+ * Latches true once the element has been reached, and stays true.
+ *
+ * Deliberately a geometry check on scroll rather than an IntersectionObserver.
+ * A jump — a nav anchor, a deep link, a restored scroll position — moves past
+ * elements without ever intersecting, and the observer reports
+ * `isIntersecting: false` for every one of them. Latching only on
+ * intersection therefore leaves everything skipped over stuck at `opacity: 0`
+ * permanently, so clicking "Plans" in the nav lands on a blank screen. This is
+ * a handful of rects on a passive scroll listener; the cost is nothing and it
+ * cannot miss.
+ */
 export function useInView<T extends HTMLElement>(
-  margin = '0px 0px -18% 0px',
+  _margin = '0px 0px -18% 0px',
 ): [React.RefObject<T>, boolean] {
   const ref = useRef<T>(null);
   const [seen, setSeen] = useState(false);
@@ -28,24 +39,31 @@ export function useInView<T extends HTMLElement>(
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (typeof IntersectionObserver === 'undefined') {
-      setSeen(true);
-      return;
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) {
-            setSeen(true);
-            io.disconnect();
-          }
-        }
-      },
-      { rootMargin: margin, threshold: 0.08 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [margin]);
+    let done = false;
+
+    const check = () => {
+      if (done || !ref.current) return;
+      const r = ref.current.getBoundingClientRect();
+      // entered from below, or already scrolled past — either way, reached
+      if (r.top < window.innerHeight * 0.92) {
+        done = true;
+        setSeen(true);
+        window.removeEventListener('scroll', check);
+        window.removeEventListener('resize', check);
+      }
+    };
+
+    check();
+    // one more after layout settles, for fonts and late-measured sections
+    const raf = requestAnimationFrame(check);
+    window.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', check);
+      window.removeEventListener('resize', check);
+    };
+  }, []);
 
   return [ref, seen];
 }

@@ -16,6 +16,11 @@ export function Rise({
   delay?: number;
 }) {
   const [ref, seen] = useInView<HTMLDivElement>();
+  // Arm the hidden state only once the reveal path is provably running, so a
+  // failure here degrades to "no animation" rather than "no content".
+  useEffect(() => {
+    document.documentElement.classList.add('js-reveal');
+  }, []);
   return (
     <div
       ref={ref}
