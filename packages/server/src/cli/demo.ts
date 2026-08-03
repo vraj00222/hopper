@@ -9,7 +9,10 @@ const store = new Store(hopper);
 
 console.log('\nHOPPER — 100 second arc\n');
 
-const results = await runArc(hopper, store, { pause: 400 });
+const results = await runArc(hopper, store, {
+  pause: 400,
+  onProgress: (m) => console.log(`  ${m}`),
+});
 
 for (const r of results) {
   console.log(`\nBEAT ${r.step} · ${r.label}  (${r.ghsa_id})`);

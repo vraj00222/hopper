@@ -146,14 +146,19 @@ export async function runBeat(h: Hopper, store: Store, step: number): Promise<Be
 export async function runArc(
   h: Hopper,
   store: Store,
-  opts: { pause?: number; burst?: boolean } = {},
+  opts: { pause?: number; burst?: boolean; onProgress?: (msg: string) => void } = {},
 ): Promise<BeatResult[]> {
   const pause = opts.pause ?? 1500;
   const results: BeatResult[] = [];
 
   if (opts.burst !== false) {
-    // the funnel: 50 in, 2 out
+    // The funnel: 50 in, 2 out. This takes ~10 seconds by design — it is the
+    // "50 advisories in 10 seconds" demo — and it runs BEFORE beat 1 prints,
+    // so say so. Silence here reads as a hang, and a presenter who thinks the
+    // demo has hung will kill it.
+    opts.onProgress?.('ingesting 50 advisories over 10s — the funnel');
     await h.ingest.burst(50, 10);
+    opts.onProgress?.('burst complete');
   }
 
   results.push(await runBeat(h, store, 1));
