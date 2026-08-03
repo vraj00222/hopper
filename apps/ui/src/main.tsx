@@ -2,16 +2,19 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { PALETTE } from '@hopper/contracts';
 import { App } from './App.js';
+import { bootTheme } from './lib/theme.js';
 import './styles.css';
 
 /**
- * The palette is written onto :root from the contract. Nothing in the CSS
- * hand-types a hex — every other colour in the stylesheet is a color-mix of
- * these six.
+ * The dark palette is written onto :root from the contract, which stays the
+ * source of truth for the instrument's resting state. styles.css declares the
+ * same six so the first paint is already dark with no JS, and carries the light
+ * table under `:root[data-theme='light']`.
+ *
+ * Dark on a fresh browser, always: bootTheme only adopts a theme somebody
+ * chose, and it never reads the OS preference.
  */
-for (const [name, value] of Object.entries(PALETTE)) {
-  document.documentElement.style.setProperty(`--${name}`, value);
-}
+bootTheme();
 
 /** the mark: a wave leaving a package, and the clause it lands on */
 const favicon = document.createElement('link');

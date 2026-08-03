@@ -1,9 +1,16 @@
 /*
  * HOPPER — an instrument, not a dashboard.
  *
- * Every colour resolves from --ground/--paper/--muted/--signal/--breach/--clear,
- * which main.tsx writes onto :root from PALETTE in @hopper/contracts. No hex is
- * typed in this file; everything else is a color-mix of those six.
+ * Every colour resolves from --ground/--paper/--muted/--signal/--breach/--clear.
+ * There are exactly TWO places in this file where a hex is typed: the :root
+ * block (the dark instrument, the default) and the :root[data-theme='light']
+ * block (the daylight instrument). Every component rule below reads a variable
+ * and nothing else, so a theme is a table of six colours, not a rewrite.
+ *
+ * The dark six mirror PALETTE in @hopper/contracts, and main.tsx rewrites them
+ * onto :root from the contract on boot — the contract stays the source of
+ * truth; these declarations exist so the first paint is already dark before a
+ * single line of JS has run, and so the light block has something to override.
  *
  * The organising idea is STAGING. A dashboard lights every panel at once and
  * lets them compete. An instrument lights the strip you are working and lets
@@ -13,6 +20,14 @@
 
 :root {
   color-scheme: dark;
+
+  /* the six — mirrors PALETTE in @hopper/contracts */
+  --ground: #0F141C;
+  --paper: #E8E4DA;
+  --muted: #7A8595;
+  --signal: #E8A33D;
+  --breach: #C7433A;
+  --clear: #4A9B8E;
 
   /* Chivo for prose, Spline Sans Mono for data, Archivo only at the two
      extremes of scale. See the comment in index.html for why Chivo. */
@@ -26,11 +41,18 @@
   --ink-dim: color-mix(in srgb, var(--paper) 54%, transparent);
   --ink-faint: color-mix(in srgb, var(--paper) 27%, transparent);
   --ink-ghost: color-mix(in srgb, var(--paper) 13%, transparent);
+  /* geometry that is not yet lit — unlit rings, unlit links, the header hair.
+     It tracks --ink-ghost on dark, and is pulled well back from it on light,
+     where an unlit mark at text weight would compete with the wave. */
+  --mark-ghost: color-mix(in srgb, var(--paper) 13%, transparent);
 
   /* staging levels */
   --lit-now: 1;
   --lit-past: 0.88;
   --lit-future: 0.3;
+  /* what everything that is not the gate falls back to while a human is being
+     asked for a signature */
+  --lit-gate: 0.58;
 
   --ease: cubic-bezier(0.16, 0.72, 0.24, 1);
 
@@ -45,6 +67,70 @@
    * floors, upper bounds are the values the design was drawn at.
    */
   --pad: clamp(9px, 1.5vh, 15px) clamp(12px, 1.4vw, 20px);
+}
+
+/*
+ * ── the daylight instrument ─────────────────────────────────────────────────
+ *
+ * Not the dark theme inverted. Four things are designed rather than flipped:
+ *
+ *   the ground   #F7F9FB, a cool near-white. Pure #FFF glares on a projector
+ *                and turns every hairline to nothing.
+ *   the signal   amber carries in-flight on dark and dies on white, so the
+ *                in-flight signal becomes a deep, slightly desaturated blue —
+ *                7.9:1 on the ground, which is a colour you can set 9px type in.
+ *   breach/clear the oxide and the teal are both darkened well past their dark
+ *                values; at their dark luminance they read as washed pastels.
+ *   the marks    every hairline is re-tuned. A rule that reads on dark is
+ *                invisible on white, and that single omission is what makes a
+ *                light theme look cheap.
+ *
+ * Panels do not gain a surface here. On dark a lit panel is a faint raise; on
+ * light the panels sit flat on the ground and the hairline does the dividing —
+ * a raised white card on a white page is a template, not an instrument.
+ */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --ground: #F7F9FB;
+  --paper: #16202C;
+  --muted: #536071;
+  --signal: #1B497F;
+  --breach: #A32419;
+  --clear: #0D6153;
+
+  /* the ink ladder is stated outright rather than mixed down to transparency:
+     alpha over a near-white ground washes out fast, and every step here has to
+     stay type you can read, not type you can see */
+  --ink-dim: #2F3B4A;
+  --ink-faint: #45525F;
+  --ink-ghost: #5D6878;
+  --mark-ghost: #C4CBD5;
+
+  --rule: #D6DDE6;
+  --rule-soft: #E6EBF1;
+  /* the one raised surface on the page: the row the screen is about. On light
+     it is a wash of the signal rather than a lift towards white. */
+  --raise: color-mix(in srgb, var(--signal) 7%, transparent);
+
+  /* Dimming is subtraction on dark and evaporation on light: the same 0.3 that
+     reads as "not yet" against black reads as "printer running out" against
+     white. Every staging level is pulled up so the unlit acts recede without
+     bleaching. */
+  --lit-past: 0.96;
+  --lit-future: 0.5;
+  --lit-gate: 0.92;
+}
+
+/* the swap is deliberate, so it is allowed a beat — and only these two
+   properties, so nothing on the page moves while the light changes */
+:root,
+body {
+  transition: background-color 240ms var(--ease), color 240ms var(--ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  body { transition: none; }
 }
 
 * { box-sizing: border-box; }
@@ -199,7 +285,7 @@ body {
 .panel.is-clear[data-lit='now']::before { background: var(--clear); }
 
 /* the gate takes the room: everything else recedes to near-dark */
-.shell[data-stage='gate'] [data-lit]:not(.is-gate) { opacity: 0.58; }
+.shell[data-stage='gate'] [data-lit]:not(.is-gate) { opacity: var(--lit-gate); }
 .shell[data-stage='gate'] .is-gate { opacity: 1; }
 
 .panel-head {
@@ -272,7 +358,7 @@ body {
   flex: none;
 }
 
-.head-rule { width: 1px; height: 14px; background: var(--ink-ghost); flex: none; }
+.head-rule { width: 1px; height: 14px; background: var(--mark-ghost); flex: none; }
 
 .head-id { display: flex; align-items: center; gap: 11px; min-width: 0; flex: 1; }
 
@@ -290,7 +376,7 @@ body {
  * a severity actually is. It reads before the word does.
  */
 .sev-meter { display: flex; align-items: flex-end; gap: 2px; flex: none; height: 14px; }
-.sev-tick { width: 3px; background: var(--ink-ghost); transition: background 300ms var(--ease); }
+.sev-tick { width: 3px; background: var(--mark-ghost); transition: background 300ms var(--ease); }
 .sev-tick:nth-child(1) { height: 5px; }
 .sev-tick:nth-child(2) { height: 8px; }
 .sev-tick:nth-child(3) { height: 11px; }
@@ -369,6 +455,21 @@ body {
 .vlink:hover { color: var(--paper); }
 .vlink:focus-visible { outline: 1px solid var(--signal); outline-offset: 3px; }
 
+/* the light switch. It is a header link that happens to be a button — same
+   size, same weight, same silence. The glyph is the only tell. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: color 140ms var(--ease);
+}
+.theme-toggle svg { display: block; overflow: visible; }
+.theme-toggle .tt-mark { transition: opacity 200ms var(--ease), transform 200ms var(--ease); }
+
 /* ── act 1 · the advisory arriving ──────────────────────────────────────── */
 
 /* the severity meter and the identifiers moved to the header, where they stay
@@ -429,7 +530,7 @@ body {
 
 .hop-link {
   stroke-width: 1.5;
-  stroke: var(--ink-ghost);
+  stroke: var(--mark-ghost);
   transition: stroke-dashoffset 300ms linear, stroke 340ms var(--ease);
 }
 .hop-link.is-on { stroke: var(--signal); }
@@ -438,7 +539,7 @@ body {
 
 .hop-node {
   fill: none;
-  stroke: var(--ink-ghost);
+  stroke: var(--mark-ghost);
   stroke-width: 1.6;
   transition: stroke 340ms var(--ease), fill 340ms var(--ease);
 }
@@ -845,7 +946,11 @@ body {
   transition: background 160ms var(--ease), transform 120ms var(--ease);
 }
 .approve-btn:hover { background: var(--paper); }
-.approve-btn:active { transform: translateY(1px); }
+/* the press is a real press: it goes down, and it goes darker under the finger */
+.approve-btn:active {
+  transform: translateY(1px);
+  background: color-mix(in srgb, var(--signal) 82%, var(--paper));
+}
 .approve-btn:focus-visible { outline: 2px solid var(--paper); outline-offset: 3px; }
 
 .shell[data-stage='gate'] .approve-btn { animation: gatePulse 2.8s var(--ease) infinite; }
@@ -893,6 +998,7 @@ body {
   font-family: var(--mono);
   font-size: 11px;
   position: relative;
+  transition: background-color 140ms var(--ease);
 }
 
 /* the advisory in focus carries a lit edge and a faint ground, so the feed

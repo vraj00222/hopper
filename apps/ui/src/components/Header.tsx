@@ -12,8 +12,10 @@
  * routinely missing a CVE id, a CVSS score, or a version range, and the header
  * has to stay a straight line when they are absent.
  */
+import { useState } from 'react';
 import type { AppState, FocusView } from '@hopper/contracts';
 import type { Mode } from '../lib/types.js';
+import { applyTheme, currentTheme } from '../lib/theme.js';
 
 const n = (v: number) => v.toLocaleString('en-US');
 
@@ -65,6 +67,45 @@ function SeverityMeter({ ticks, tone }: { ticks: number; tone: string }) {
         <span key={i} className={`sev-tick${i < ticks ? ' is-on' : ''}`} />
       ))}
     </span>
+  );
+}
+
+/**
+ * The light switch sits with the vendor links and is drawn to their weight: it
+ * is the same 9.5px mono, the same silence. The glyph is a sun that closes into
+ * a crescent, and the word says the state you would be switching TO, which is
+ * the only thing an operator standing at the machine wants to know.
+ */
+function ThemeToggle() {
+  const [theme, setTheme] = useState(() => currentTheme());
+  const next = theme === 'dark' ? 'light' : 'dark';
+
+  return (
+    <button
+      type="button"
+      className="vlink theme-toggle"
+      onClick={() => {
+        applyTheme(next);
+        setTheme(next);
+      }}
+      aria-label={`Switch to the ${next} theme`}
+      title={`Switch to the ${next} theme`}
+    >
+      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+        <circle cx="6" cy="6" r="3" stroke="currentColor" strokeWidth="1.2" />
+        {/* the rays retract when the room is already light */}
+        <g
+          className="tt-mark"
+          stroke="currentColor"
+          strokeWidth="1.2"
+          strokeLinecap="square"
+          opacity={theme === 'dark' ? 0.45 : 1}
+        >
+          <path d="M6 0.4V1.8M6 10.2V11.6M0.4 6H1.8M10.2 6H11.6" />
+        </g>
+      </svg>
+      {next}
+    </button>
   );
 }
 
@@ -129,6 +170,7 @@ export function Header({
         <a className="vlink" href={SITE_URL} target="_blank" rel="noreferrer">
           Overview &#9656;
         </a>
+        <ThemeToggle />
       </nav>
     </header>
   );

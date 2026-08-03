@@ -36,6 +36,20 @@
     />
   </head>
   <body>
+    <!--
+      The theme is stamped before the first paint so the swap is never something
+      the room watches happen. Dark is the default and the fallback: only the
+      exact stored string 'light' moves it, and a browser that refuses
+      localStorage still comes up dark.
+    -->
+    <script>
+      try {
+        document.documentElement.dataset.theme =
+          localStorage.getItem('hopper.theme') === 'light' ? 'light' : 'dark';
+      } catch (e) {
+        document.documentElement.dataset.theme = 'dark';
+      }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

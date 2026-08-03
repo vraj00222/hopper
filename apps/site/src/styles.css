@@ -364,6 +364,18 @@ p {
   .rail {
     display: block;
   }
+
+  /* The rail is position:fixed at left:0, so content must be pushed clear of
+     it or it draws straight through the headline. When .wrap was capped at
+     1120px it always had enough centring margin to hide behind; at 1560px it
+     does not — at a ~1700px window the wrap starts at 70px, inside the rail.
+     Widen the box by exactly the rail and pad by the same amount, so the
+     content column still reads as centred while never colliding. */
+  .wrap,
+  .nav__in {
+    max-width: calc(1560px + var(--rail));
+    padding-left: calc(var(--rail) + clamp(20px, 4vw, 56px));
+  }
 }
 
 .rail__axis {
