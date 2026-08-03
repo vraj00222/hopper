@@ -14,6 +14,7 @@ const PORTS = [
   [8787, 'api'],
   [5173, 'console'],
   [5174, 'site'],
+  [5175, 'deck'],
 ];
 
 const listenersOn = (port) => {
@@ -70,4 +71,4 @@ for (const [port, name] of PORTS) {
   }
 }
 
-if (freed === 0) console.log('ports      8787, 5173, 5174 all clear');
+if (freed === 0) console.log('ports      8787, 5173, 5174, 5175 all clear');

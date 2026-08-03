@@ -228,7 +228,10 @@ npm run dev           # api 8787 · console 5173 · site 5174
 RocketRide bridge and the real advisory pull. Ports are pinned with `--strictPort` so
 the console never silently moves; `predev` clears them first.
 
-There is also a 5-slide deck at `apps/deck/index.html` — open it directly, no server.
+**Ports:** api `8787` · console `5173` · site `5174` · deck `5175`.
+
+The deck also opens standalone — `open apps/deck/index.html`. One self-contained
+file, no server, works offline.
 
 ---
 

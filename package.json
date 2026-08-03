@@ -15,7 +15,7 @@
     "seed": "tsx packages/graph/src/cli/seed.ts",
     "pull-live": "tsx packages/ingest/src/cli/pull-live.ts",
     "replay": "tsx packages/server/src/cli/replay.ts",
-    "dev": "concurrently -n server,ui,site -c cyan,magenta,yellow \"npm run dev:server\" \"npm run dev:ui\" \"npm run dev:site\"",
+    "dev": "concurrently -n server,ui,site,deck -c cyan,magenta,yellow,green \"npm run dev:server\" \"npm run dev:ui\" \"npm run dev:site\" \"npm run dev:deck\"",
     "dev:server": "tsx watch packages/server/src/main.ts",
     "dev:ui": "npm --workspace @hopper/ui run dev",
     "dev:site": "npm --workspace @hopper/site run dev",
@@ -24,7 +24,8 @@
     "typecheck": "tsc -b --pretty",
     "test": "npm run gate",
     "predev": "node scripts/free-ports.mjs",
-    "stop": "node scripts/free-ports.mjs"
+    "stop": "node scripts/free-ports.mjs",
+    "dev:deck": "npm --workspace @hopper/deck run dev"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
