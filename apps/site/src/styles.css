@@ -146,10 +146,17 @@ p {
 
 /* ── layout ───────────────────────────────────────────────────────────────── */
 
+/* Fluid rather than a hard 1120px. On a 1900px display a fixed column left
+   383px of dead margin on each side, which reads as a page that has not
+   filled its window. It now scales with the viewport and only stops widening
+   where line length would start to hurt. Prose inside still has its own
+   narrower max-widths, so this gives room to the panels and the hero grid
+   without stretching body copy. */
 .wrap {
-  max-width: 1120px;
+  width: 100%;
+  max-width: 1560px;
   margin: 0 auto;
-  padding-inline: clamp(20px, 4vw, 44px);
+  padding-inline: clamp(20px, 4vw, 56px);
 }
 
 /* grid children default to min-width:auto, which lets a wide code block or a
@@ -218,9 +225,11 @@ p {
 }
 
 .nav__in {
-  max-width: 1120px;
+  /* must track .wrap exactly, or the wordmark stops aligning with the content */
+  width: 100%;
+  max-width: 1560px;
   margin: 0 auto;
-  padding: 0 clamp(20px, 4vw, 44px);
+  padding: 0 clamp(20px, 4vw, 56px);
   height: 62px;
   display: flex;
   align-items: center;
