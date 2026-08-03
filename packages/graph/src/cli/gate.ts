@@ -57,6 +57,8 @@ async function runSuite(g: GraphPort, backend: Backend): Promise<void> {
       `${summary.repos} repos, ${summary.customers} customers (${Date.now() - t0}ms)`,
   );
 
+  const st0 = await g.stats();
+
   // 3 — Q1: the money query
   const paths = await g.hopPaths(HERO_GHSA);
   const hero = paths.find(
@@ -133,15 +135,15 @@ async function runSuite(g: GraphPort, backend: Backend): Promise<void> {
   );
 
   // 7 — Q4: choke points
-  const chokes = await g.chokePoints(12);
+  const chokes = await g.chokePoints();
   const brace = chokes.find((c) => c.package === HERO_PACKAGE);
   assert(
     chokes.length > 0 && !!brace && brace.is_chokepoint,
     '7  Q4 chokePoints',
     brace
       ? `${chokes.length} returned; ${HERO_PACKAGE} betweenness=` +
-        `${brace.betweenness.toFixed(4)} dependents=${brace.dependents} ` +
-        `rank=${chokes.indexOf(brace) + 1}`
+        `${brace.betweenness.toExponential(3)} dependents=${brace.dependents} ` +
+        `rank ${chokes.indexOf(brace) + 1}/${st0.packages} packages`
       : `${HERO_PACKAGE} absent from top ${chokes.length}`,
   );
   process.stdout.write(

@@ -124,7 +124,7 @@ async function main(): Promise<void> {
   console.log('HOPPER · @hopper/orchestrate (RocketRide) gate');
   console.log('MOCK=true · no network · no sibling package imported');
 
-  const runtime = createRuntime({ mock: true });
+  const runtime = createRuntime({ mock: true, loadPipelineDir: false });
 
   // 1 ─ loadFromJson: accept valid, reject three kinds of malformed spec ─────
   head(1, 'loadFromJson() parses and validates a .pipe from a JSON string');
@@ -341,7 +341,7 @@ async function main(): Promise<void> {
     bus: createStubBus(),
     agents: createStubAgents(),
     meta: createStubMeta(),
-    runtime: createRuntime({ mock: true }),
+    runtime: createRuntime({ mock: true, loadPipelineDir: false }),
     tools: createTools({ mock: true }),
     mock: true,
   });
@@ -363,7 +363,7 @@ async function main(): Promise<void> {
     bus: createStubBus(),
     agents: aBoth,
     meta: mBoth,
-    runtime: createRuntime({ mock: true }),
+    runtime: createRuntime({ mock: true, loadPipelineDir: false }),
     tools: createTools({ mock: true }),
     mock: true,
   });

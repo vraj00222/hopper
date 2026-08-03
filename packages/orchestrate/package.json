@@ -5,6 +5,11 @@
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "scripts": { "gate": "tsx src/cli/gate.ts" },
-  "dependencies": { "@hopper/contracts": "*" }
+  "scripts": {
+    "gate": "tsx src/cli/gate.ts"
+  },
+  "dependencies": {
+    "@hopper/contracts": "*",
+    "rocketride": "^1.3.0"
+  }
 }

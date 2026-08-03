@@ -31,6 +31,38 @@ import { LocalBus, type BusInternals } from './local.js';
 const STREAM = 'hopper';
 const PARTITIONS = 4;
 
+/**
+ * Budgets. Laser.connect() against an unreachable endpoint does not return on
+ * its own, and a hackathon demo cannot afford a hung await — so every SDK call
+ * races a timer and a timeout is just another reason to degrade to local.
+ */
+const CONNECT_TIMEOUT_MS = Number(process.env.LASER_CONNECT_TIMEOUT_MS ?? 6_000);
+const OP_TIMEOUT_MS = Number(process.env.LASER_OP_TIMEOUT_MS ?? 2_000);
+
+class LaserTimeout extends Error {
+  constructor(op: string, ms: number) {
+    super(`${op} exceeded ${ms}ms`);
+    this.name = 'LaserTimeout';
+  }
+}
+
+function withTimeout<T>(op: string, ms: number, work: Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new LaserTimeout(op, ms)), ms);
+    timer.unref();
+    work.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e: unknown) => {
+        clearTimeout(timer);
+        reject(e instanceof Error ? e : new Error(String(e)));
+      },
+    );
+  });
+}
+
 // ── the slice of the SDK we actually touch ──────────────────────────────────
 
 interface SendableJson {
@@ -86,7 +118,8 @@ const dec = new TextDecoder();
 
 export class LaserDataBus implements EventBusPort, BusInternals {
   private readonly local = new LocalBus({ trackLatency: false });
-  private laser: LaserLike | null = null;
+  /** the raw handle, kept even after degrading so close() can still release it */
+  private client: LaserLike | null = null;
   private degraded = false;
   private logged = false;
 
@@ -95,33 +128,40 @@ export class LaserDataBus implements EventBusPort, BusInternals {
   async connect(): Promise<void> {
     await this.local.connect();
     try {
-      const mod = (await import('@laserdata/laser-sdk')) as unknown as {
-        Laser: { connect(url: string): Promise<LaserLike> };
-      };
-      const laser = await mod.Laser.connect(this.url);
+      const mod = (await withTimeout(
+        'import',
+        CONNECT_TIMEOUT_MS,
+        import('@laserdata/laser-sdk'),
+      )) as unknown as { Laser: { connect(url: string): Promise<LaserLike> } };
+      const laser = await withTimeout('Laser.connect', CONNECT_TIMEOUT_MS, mod.Laser.connect(this.url));
+      this.client = laser;
       const stream = laser.stream(STREAM);
-      for (const t of TOPICS) await stream.topic(t).ensure(PARTITIONS);
-      this.laser = laser;
-      console.log(`[ingest] laserdata connected — stream "${STREAM}", ${TOPICS.length} topics x ${PARTITIONS} partitions`);
+      for (const t of TOPICS) {
+        await withTimeout(`topic(${t}).ensure`, OP_TIMEOUT_MS, stream.topic(t).ensure(PARTITIONS));
+      }
+      console.log(
+        `[ingest] laserdata connected — stream "${STREAM}", ${TOPICS.length} topics x ${PARTITIONS} partitions`,
+      );
     } catch (err) {
       this.degrade(err);
     }
   }
 
   async close(): Promise<void> {
-    if (this.laser) {
+    if (this.client) {
+      const laser = this.client;
+      this.client = null;
       try {
-        await this.laser.close();
-      } catch (err) {
-        this.degrade(err);
+        await withTimeout('close', OP_TIMEOUT_MS, laser.close());
+      } catch {
+        // a transport we already gave up on does not get to fail the shutdown
       }
-      this.laser = null;
     }
     await this.local.close();
   }
 
   transport(): 'laserdata' | 'local' {
-    return this.laser && !this.degraded ? 'laserdata' : 'local';
+    return this.client !== null && !this.degraded ? 'laserdata' : 'local';
   }
 
   async publish<T extends HopperEvent>(topic: Topic, payload: T): Promise<EventEnvelope<T>> {
@@ -133,7 +173,11 @@ export class LaserDataBus implements EventBusPort, BusInternals {
     const laser = this.live();
     if (laser && !wasDuplicate) {
       try {
-        await laser.stream(STREAM).topic(topic).publish().json(env).send();
+        await withTimeout(
+          `publish(${topic})`,
+          OP_TIMEOUT_MS,
+          laser.stream(STREAM).topic(topic).publish().json(env).send(),
+        );
       } catch (err) {
         this.degrade(err);
       }
@@ -158,7 +202,7 @@ export class LaserDataBus implements EventBusPort, BusInternals {
     const laser = this.live();
     if (!laser) return;
     try {
-      await laser.kv(namespace).set(enc.encode(key)).json(value).send();
+      await withTimeout('kvSet', OP_TIMEOUT_MS, laser.kv(namespace).set(enc.encode(key)).json(value).send());
     } catch (err) {
       this.degrade(err);
     }
@@ -168,7 +212,7 @@ export class LaserDataBus implements EventBusPort, BusInternals {
     const laser = this.live();
     if (laser) {
       try {
-        const bytes = await laser.kv(namespace).get(enc.encode(key));
+        const bytes = await withTimeout('kvGet', OP_TIMEOUT_MS, laser.kv(namespace).get(enc.encode(key)));
         if (bytes !== undefined) return JSON.parse(dec.decode(bytes)) as T;
         return null;
       } catch (err) {
@@ -182,7 +226,7 @@ export class LaserDataBus implements EventBusPort, BusInternals {
     const laser = this.live();
     if (laser) {
       try {
-        const entries = await laser.kv(namespace).scan().entries();
+        const entries = await withTimeout('kvList', OP_TIMEOUT_MS, laser.kv(namespace).scan().entries());
         return entries.map((e) => ({
           key: dec.decode(e.key),
           value: JSON.parse(dec.decode(e.value)) as T,
@@ -198,13 +242,11 @@ export class LaserDataBus implements EventBusPort, BusInternals {
     const laser = this.live();
     if (laser) {
       try {
-        const items = await laser
-          .memory(namespace)
-          .recall()
-          .application(STREAM)
-          .semantic(q)
-          .limit(20)
-          .fetch();
+        const items = await withTimeout(
+          'recall',
+          OP_TIMEOUT_MS,
+          laser.memory(namespace).recall().application(STREAM).semantic(q).limit(20).fetch(),
+        );
         if (items.length > 0) {
           return items.map((i) => ({ text: dec.decode(i.payload), score: i.score ?? 0 }));
         }
@@ -237,12 +279,11 @@ export class LaserDataBus implements EventBusPort, BusInternals {
     this.local.remember(namespace, text);
     const laser = this.live();
     if (!laser) return;
-    void laser
-      .memory(namespace)
-      .remember(enc.encode(text))
-      .application(STREAM)
-      .send()
-      .catch((err: unknown) => this.degrade(err));
+    void withTimeout(
+      'remember',
+      OP_TIMEOUT_MS,
+      laser.memory(namespace).remember(enc.encode(text)).application(STREAM).send(),
+    ).catch((err: unknown) => this.degrade(err));
   }
 
   pushLatency(ms: number): void {
@@ -256,12 +297,11 @@ export class LaserDataBus implements EventBusPort, BusInternals {
   // ── internals ────────────────────────────────────────────────────────────
 
   private live(): LaserLike | null {
-    return this.degraded ? null : this.laser;
+    return this.degraded ? null : this.client;
   }
 
   private degrade(err: unknown): void {
     this.degraded = true;
-    this.laser = null;
     if (!this.logged) {
       this.logged = true;
       const msg = err instanceof Error ? err.message : String(err);

@@ -2,6 +2,7 @@
  * HOPPER — FalkorDB connection. The only file in the repo that imports the driver.
  */
 import { FalkorDB } from 'falkordb';
+import type { FalkorDBOptions } from 'falkordb';
 import type Graph from 'falkordb/dist/src/graph.js';
 
 export const DEFAULT_URL = 'falkor://localhost:6379';
@@ -56,14 +57,16 @@ export class FalkorClient {
     let lastErr: unknown;
     for (let i = 0; i < this.attempts; i += 1) {
       try {
-        const db = await FalkorDB.connect({
-          socket: {
-            host: this.endpoint.host,
-            port: this.endpoint.port,
-            connectTimeout: this.connectTimeoutMs,
-            reconnectStrategy: false,
-          },
-        });
+        // reconnectStrategy is a node-redis socket option the driver forwards
+        // but does not surface in its narrower SocketOptions type. Without it a
+        // dead FalkorDB leaves a reconnect loop running behind the fallback.
+        const socket = {
+          host: this.endpoint.host,
+          port: this.endpoint.port,
+          connectTimeout: this.connectTimeoutMs,
+          reconnectStrategy: false,
+        } as unknown as NonNullable<FalkorDBOptions['socket']>;
+        const db = await FalkorDB.connect({ socket });
         const g = db.selectGraph(this.graphName);
         // touch it so an unreachable server fails here, not on the first query
         await g.query('RETURN 1');

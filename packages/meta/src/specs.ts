@@ -145,16 +145,38 @@ export function handlesClass(spec: PipelineSpec, cls: AdvisoryClass): boolean {
   );
 }
 
-/** widened local match: same ecosystem + severity band, any depth */
+/**
+ * Widening may cross severity and depth, but never the zero-path boundary.
+ *
+ * depth_band 'none' is not "a bit shallower" - it means the traversal found no
+ * path at all, and the pipelines built for it (fast-suppress) skip the entire
+ * analysis. Letting a 'none' handler widen onto a class that has paths would
+ * suppress a live advisory on the strength of its success rate alone. So the
+ * two sides of that boundary widen only among themselves.
+ */
+function depthCompatible(h: Partial<AdvisoryClass>, cls: AdvisoryClass): boolean {
+  if (h.depth_band === undefined) return true;
+  return (h.depth_band === 'none') === (cls.depth_band === 'none');
+}
+
+/** widened local match: same ecosystem + severity band, any compatible depth */
 export function handlesEcosystemSeverity(spec: PipelineSpec, cls: AdvisoryClass): boolean {
   return (spec.handles ?? []).some(
     (h) =>
       (h.ecosystem === undefined || h.ecosystem === cls.ecosystem) &&
-      (h.severity_band === undefined || h.severity_band === cls.severity_band),
+      (h.severity_band === undefined || h.severity_band === cls.severity_band) &&
+      depthCompatible(h, cls),
   );
 }
 
-/** widest local match: same ecosystem, anything else */
+/** widest local match: same ecosystem, any compatible depth */
 export function handlesEcosystem(spec: PipelineSpec, cls: AdvisoryClass): boolean {
-  return (spec.handles ?? []).some((h) => h.ecosystem === undefined || h.ecosystem === cls.ecosystem);
+  return (spec.handles ?? []).some(
+    (h) => (h.ecosystem === undefined || h.ecosystem === cls.ecosystem) && depthCompatible(h, cls),
+  );
+}
+
+/** any ecosystem, any severity, compatible depth — the last guarded rung */
+export function handlesAnything(spec: PipelineSpec, cls: AdvisoryClass): boolean {
+  return (spec.handles ?? []).some((h) => depthCompatible(h, cls));
 }

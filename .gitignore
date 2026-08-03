@@ -5,7 +5,8 @@ build/
 *.log
 .DS_Store
 .env
-.env.local
+.env.*
+.claude/
 *.tsbuildinfo
 coverage/
 .vite/
@@ -14,3 +15,9 @@ coverage/
 # no markdown in this repo
 *.md
 !/dev/null
+scratch/
+.playwright-mcp/
+.screenshots/
+*.png
+*.jpg
+

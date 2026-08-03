@@ -1,0 +1,101 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]: HOPPER
+    - generic [ref=e6]:
+      - generic [ref=e7]: connecting
+      - generic [ref=e9]: ·
+      - generic [ref=e10]: 30 advisories/24h
+      - generic [ref=e11]: ·
+      - generic [ref=e12]: 1,656 in KEV
+      - generic [ref=e13]: ·
+      - generic [ref=e14]: 4,187 nodes / 11,342 edges
+      - generic [ref=e15]: ·
+      - generic [ref=e16]: 7 chokepoints
+    - navigation [ref=e17]:
+      - link "FalkorDB browser ▸" [ref=e18] [cursor=pointer]:
+        - /url: http://localhost:3000
+      - link "RocketRide trace ▸" [ref=e19] [cursor=pointer]:
+        - /url: http://localhost:7070/trace
+  - generic [ref=e20]:
+    - generic [ref=e21]:
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - heading "Hop path" [level=2] [ref=e24]
+          - generic [ref=e25]: falkordb Q1
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]: —
+            - generic [ref=e29]: HOPS
+          - generic [ref=e30]: waiting for an advisory
+        - img "hop path — standing by" [ref=e33]:
+          - generic [ref=e34]: STANDING BY · PRESS 1
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - heading "Feed" [level=2] [ref=e38]
+          - generic [ref=e39]:
+            - strong [ref=e40]: "48"
+            - text: ingested →
+            - strong [ref=e41]: "0"
+            - text: escalated · p99 1620ms
+        - generic [ref=e42]:
+          - 'generic "lodash.template: prototype pollution in deep merge helper" [ref=e43]':
+            - generic [ref=e44]: 16:14
+            - generic [ref=e45]: lodash.template
+            - generic [ref=e46]: "0"
+          - 'generic "tough-cookie: regular expression denial of service in parser" [ref=e47]':
+            - generic [ref=e48]: 15:44
+            - generic [ref=e49]: tough-cookie
+            - generic [ref=e50]: "0"
+          - button "…46 suppressed zero hops from any repo" [ref=e51] [cursor=pointer]:
+            - generic [ref=e52]: …46 suppressed
+            - generic [ref=e53]: zero hops from any repo
+    - generic [ref=e54]:
+      - generic [ref=e55]:
+        - generic [ref=e56]:
+          - heading "Obligation" [level=2] [ref=e57]
+          - generic [ref=e58]: contract graph
+        - generic [ref=e59]:
+          - generic [ref=e60]: NO OPEN OBLIGATION
+          - generic [ref=e61]: T-——:——:——
+          - generic [ref=e62]: no clause in range
+      - generic [ref=e65]:
+        - generic [ref=e66]:
+          - heading "Agents" [level=2] [ref=e67]
+          - generic [ref=e68]: via Guild
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - generic [ref=e71]: ▸
+            - generic [ref=e72]: Reachability
+            - generic [ref=e73]: —
+          - generic [ref=e74]:
+            - generic [ref=e75]: ▸
+            - generic [ref=e76]: Patch Eng.
+            - generic [ref=e77]: —
+          - generic [ref=e78]:
+            - generic [ref=e79]: ▸
+            - generic [ref=e80]: Obligation
+            - generic [ref=e81]: —
+          - generic [ref=e82]:
+            - generic [ref=e83]: ▸
+            - generic [ref=e84]: Arbiter
+            - generic [ref=e85]: —
+        - generic [ref=e86]: agent bus idle
+      - generic [ref=e88]:
+        - generic [ref=e89]:
+          - heading "Actions" [level=2] [ref=e90]
+          - generic [ref=e91]: 0 executed
+        - generic [ref=e92]: no actions taken
+      - button "Audit 0 entries · show ▸" [ref=e95] [cursor=pointer]:
+        - generic [ref=e96]: Audit
+        - generic [ref=e97]: 0 entries · show ▸
+  - contentinfo [ref=e98]:
+    - generic [ref=e99]: Pipeline
+    - generic [ref=e100]: no pipeline selected
+    - link "RocketRide ▸" [ref=e101] [cursor=pointer]:
+      - /url: http://localhost:7070/trace
+    - generic [ref=e102]:
+      - generic [ref=e103]: beat
+      - button "1" [ref=e104] [cursor=pointer]
+      - button "2" [ref=e105] [cursor=pointer]
+      - button "3" [ref=e106] [cursor=pointer]
+      - button "0" [ref=e107] [cursor=pointer]
