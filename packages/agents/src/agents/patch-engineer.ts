@@ -83,7 +83,7 @@ export function derivePatch(g: GroundedInput): PatchVerdict {
       precedent_ids: [cite],
       rationale:
         `${fresh.package} was bumped ${fresh.from_v} → ${fresh.to_v} ${agoPhrase(fresh.age_seconds)} and staging broke ` +
-        `(${cite}: ${fresh.notes || fresh.outcome}). ` +
+        `(${cite}: ${noteText(fresh, cite)}). ` +
         (repeats
           ? `The only published fix for ${describeRange(g)} is ${target}, which is the same bump that just failed, so shipping it now repeats a known failure.`
           : `That failure is recent enough that the ${target ?? 'proposed'} bump would land on a build we already know is unstable.`) +
@@ -118,7 +118,8 @@ export function derivePatch(g: GroundedInput): PatchVerdict {
       precedent_ids: [precedentCitation(matched)],
       rationale:
         `${pkg} → ${target} has been applied before and succeeded (${precedentCitation(matched)}, ${agoPhrase(matched.age_seconds)}: ` +
-        `${matched.notes || 'clean'}), and no failed attempt sits inside the recency window. Safe to bump. ${GROUNDING}`,
+        `${noteText(matched, precedentCitation(matched))}), and no failed attempt sits inside the recency window. Safe to bump. ` +
+        `${GROUNDING}`,
     };
   }
 
@@ -134,8 +135,8 @@ export function derivePatch(g: GroundedInput): PatchVerdict {
       precedent_ids: [precedentCitation(worst)],
       rationale:
         `${pkg} → ${target} is a ${shape}-level bump. A previous attempt failed (${precedentCitation(worst)}, ` +
-        `${agoPhrase(worst.age_seconds)}, ${worst.outcome}: ${worst.notes}) but it is outside the recency window, so it prices ` +
-        `the risk rather than blocking the change. Bump with staged verification. ${GROUNDING}`,
+        `${agoPhrase(worst.age_seconds)}, ${worst.outcome}: ${noteText(worst, precedentCitation(worst))}) but it is outside the ` +
+        `recency window, so it prices the risk rather than blocking the change. Bump with staged verification. ${GROUNDING}`,
     };
   }
 
@@ -158,6 +159,16 @@ export function derivePatch(g: GroundedInput): PatchVerdict {
 
 function describeRange(g: GroundedInput): string {
   return g.advisory.vulnerable_range || 'the vulnerable range';
+}
+
+/** the operator's note, without repeating the citation the graph already wrote into it */
+function noteText(p: Precedent, cite: string): string {
+  const raw = (p.notes ?? '').trim();
+  if (!raw) return p.outcome;
+  const stripped = raw.startsWith(cite)
+    ? raw.slice(cite.length).replace(/^\s*[—:-]\s*/, '')
+    : raw;
+  return stripped || p.outcome;
 }
 
 /** exposed so the Arbiter can reason about the same precedent the engineer cited */

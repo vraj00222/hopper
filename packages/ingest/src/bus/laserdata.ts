@@ -31,6 +31,38 @@ import { LocalBus, type BusInternals } from './local.js';
 const STREAM = 'hopper';
 const PARTITIONS = 4;
 
+/**
+ * Budgets. Laser.connect() against an unreachable endpoint does not return on
+ * its own, and a hackathon demo cannot afford a hung await — so every SDK call
+ * races a timer and a timeout is just another reason to degrade to local.
+ */
+const CONNECT_TIMEOUT_MS = Number(process.env.LASER_CONNECT_TIMEOUT_MS ?? 6_000);
+const OP_TIMEOUT_MS = Number(process.env.LASER_OP_TIMEOUT_MS ?? 2_000);
+
+class LaserTimeout extends Error {
+  constructor(op: string, ms: number) {
+    super(`${op} exceeded ${ms}ms`);
+    this.name = 'LaserTimeout';
+  }
+}
+
+function withTimeout<T>(op: string, ms: number, work: Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new LaserTimeout(op, ms)), ms);
+    timer.unref();
+    work.then(
+      (v) => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      (e: unknown) => {
+        clearTimeout(timer);
+        reject(e instanceof Error ? e : new Error(String(e)));
+      },
+    );
+  });
+}
+
 // ── the slice of the SDK we actually touch ──────────────────────────────────
 
 interface SendableJson {
