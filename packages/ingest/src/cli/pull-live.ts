@@ -34,7 +34,7 @@ import type {
 } from '@hopper/contracts';
 
 import { createBus } from '../index.js';
-import { HopperIngest, OSV_PACKAGES, syntheticAdvisory } from '../ingest.js';
+import { BURST_SURVIVORS, HopperIngest, OSV_PACKAGES, burstPlan, syntheticAdvisory } from '../ingest.js';
 import { TelemetrySimulator } from '../telemetry.js';
 import { LIVE_FIXTURE, REPLAY_FIXTURE, KEV_FIXTURE, fmtAge, writeJson } from '../paths.js';
 import { validateEnvelope } from '../validate.js';
@@ -74,7 +74,7 @@ async function main(): Promise<void> {
   const livePath = writeJson(LIVE_FIXTURE, advisories);
 
   // ── fixtures/replay.json ─────────────────────────────────────────────────
-  const replay = buildReplay(advisories);
+  const replay = buildReplay();
   const replayPath = writeJson(REPLAY_FIXTURE, replay);
   const invalid = replay.filter((e) => !validateEnvelope(e).ok);
 
@@ -117,6 +117,10 @@ async function main(): Promise<void> {
       .join(' ')}`,
   );
   console.log(`wrote        ${pad(KEV_FIXTURE, 22)} ${rpad(kev.cves.length, 5)} CVEs`);
+  const burstPkgs = burstPlan(50);
+  console.log(
+    `burst pool   ${rpad(new Set(burstPkgs).size, 5)} distinct packages, ${BURST_SURVIVORS} of 50 inside the seeded closure — the rest this estate does not depend on`,
+  );
   console.log(`validated    ${replay.length - invalid.length}/${replay.length} envelopes pass the contract`);
   for (const e of invalid.slice(0, 3)) console.log(`  INVALID ${e.topic} ${validateEnvelope(e).errors.join('; ')}`);
   console.log(RULE);
@@ -135,7 +139,7 @@ async function main(): Promise<void> {
  *   beat 3  memory         precedent advisory
  *   then    the funnel     50 advisories over 10 seconds
  */
-function buildReplay(live: Advisory[]): EventEnvelope<HopperEvent>[] {
+function buildReplay(): EventEnvelope<HopperEvent>[] {
   const out: EventEnvelope<HopperEvent>[] = [];
   const t0 = Date.now();
   let seq = 0;
@@ -204,16 +208,11 @@ function buildReplay(live: Advisory[]): EventEnvelope<HopperEvent>[] {
   // beat 3 — memory
   push('advisories', 9600, advisoryEvent(PRECEDENT_ADVISORY, 9600));
 
-  // the funnel — 50 advisories in 10 seconds, 2 survive
-  const burst: Advisory[] = [];
-  for (let i = 0; i < 50; i += 1) burst.push(syntheticAdvisory(i));
-  // seed a few real ones from this pull so the burst is not entirely synthetic
-  live
-    .filter((a) => !DEMO_IDS.has(a.ghsa_id))
-    .slice(0, 6)
-    .forEach((a, i) => {
-      burst[i * 8] = a;
-    });
+  // The funnel — 50 advisories in 10 seconds, 2 survive. The pool is packages
+  // this estate genuinely does not depend on (see BURST_ABSENT_PACKAGES), so
+  // the narrowing is the graph's verdict rather than the generator's.
+  const plan = burstPlan(50);
+  const burst: Advisory[] = plan.map((pkg, i) => syntheticAdvisory(i, pkg));
   burst.forEach((a, i) => {
     const at = 11_000 + Math.round((i * 10_000) / burst.length);
     push('advisories', at, advisoryEvent(a, at));
@@ -221,12 +220,6 @@ function buildReplay(live: Advisory[]): EventEnvelope<HopperEvent>[] {
 
   return out;
 }
-
-const DEMO_IDS = new Set([
-  HERO_ADVISORY.ghsa_id,
-  SUPPRESSED_ADVISORY.ghsa_id,
-  PRECEDENT_ADVISORY.ghsa_id,
-]);
 
 main().catch((err) => {
   console.error('pull-live failed');

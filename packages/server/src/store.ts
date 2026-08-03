@@ -138,8 +138,39 @@ export class Store {
     }
     this.emit({ type: 'run', run });
     this.emit({ type: 'funnel', funnel: this.hopper.orchestrator.funnel() });
+
+    // the pipeline strip: which harness the graph picked, and why. The UI
+    // holds this in local state off this message, so a live server has to
+    // emit it or the strip never moves and the meta reveal is invisible.
+    const chosen = this.pipelines.find((p) => p.pipeline_id === run.pipeline_id);
+    this.emit({
+      type: 'pipeline',
+      selection: {
+        pipeline_id: run.pipeline_id,
+        name: chosen?.name ?? run.pipeline_id,
+        success_rate: chosen?.success_rate ?? 0,
+        avg_latency: chosen?.avg_latency ?? run.latency_ms,
+        advisory_class: run.advisory_class,
+        reason: run.selection_reason,
+      },
+    });
+
     this.focusId = run.ghsa_id;
     void this.startObligationClocks(run);
+    void this.refreshPipelines();
+  }
+
+  private pipelines: Array<{
+    pipeline_id: string;
+    name: string;
+    success_rate: number;
+    avg_latency: number;
+    runs: number;
+  }> = [];
+
+  /** keep the leaderboard warm so the strip can name the pipeline it picked */
+  async refreshPipelines(): Promise<void> {
+    this.pipelines = await this.hopper.meta.leaderboard().catch(() => this.pipelines);
   }
 
   /**

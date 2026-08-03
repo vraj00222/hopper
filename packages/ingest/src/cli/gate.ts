@@ -27,10 +27,11 @@ import type {
   Topic,
 } from '@hopper/contracts';
 
-import { createBus, createIngest } from '../index.js';
+import { busSelection, createBus, createIngest, loadDotEnv } from '../index.js';
+import { BURST_SURVIVORS, burstPlan } from '../ingest.js';
 import { fetchKev, kevIndex } from '../sources/kev.js';
 import { validateEnvelope, validateEvent } from '../validate.js';
-import { REPLAY_FIXTURE, fmtAge, repoRoot } from '../paths.js';
+import { REPLAY_FIXTURE, fmtAge, readJson, repoRoot } from '../paths.js';
 
 const RULE = '─'.repeat(72);
 let passed = 0;
@@ -72,15 +73,22 @@ async function main(): Promise<void> {
   const forcedMock = process.env.MOCK === 'true' || process.env.MOCK === '1';
   const started = nowIso();
 
-  const bus = createBus({ url: process.env.LASER_URL, mock: !process.env.LASER_URL });
+  // The bus follows the same resolution the server will use: repo-root .env,
+  // then LASER_CONNECTION_STRING / LASER_URL / LASER_SERVER. No endpoint means
+  // the live LaserData section is SKIPPED, not failed.
+  const applied = loadDotEnv();
+  const selection = busSelection({ mock: forcedMock ? true : undefined });
+  const bus = createBus({ mock: forcedMock ? true : undefined });
   await bus.connect();
   const ingest = createIngest(bus, { mock: forcedMock });
 
   console.log('HOPPER · ingest gate');
   console.log(RULE);
-  console.log(`transport    ${bus.transport()}`);
+  console.log(`transport    ${bus.transport()}  (selected: ${selection.transport})`);
+  console.log(`reason       ${selection.reason}`);
+  console.log(`endpoint     ${selection.endpoint ?? '(none configured)'}   stream "${selection.stream}"`);
+  console.log(`.env         ${applied.length > 0 ? `loaded ${applied.length} keys: ${applied.join(', ')}` : 'nothing new to load'}`);
   console.log(`mode         ${forcedMock ? 'MOCK=true (offline, fixture cascade)' : 'live (network permitted)'}`);
-  console.log(`laser_url    ${process.env.LASER_URL ?? '(unset — local transport)'}`);
   console.log(`root         ${repoRoot()}`);
   console.log(`started      ${started}`);
   console.log(RULE);
