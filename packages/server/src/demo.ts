@@ -25,6 +25,28 @@ export interface BeatResult {
   note: string;
 }
 
+/**
+ * Publish, then wait for the router to pick it up off the bus.
+ *
+ * The orchestrator subscribes to `advisories` itself, so calling handle()
+ * here as well would make the router's own sighting the duplicate and the
+ * beat would report `deduped`. The event has to travel the real path —
+ * LaserData in, RocketRide out — or the demo is narrating a lie.
+ */
+async function awaitRun(
+  h: Hopper,
+  ghsaId: string,
+  timeoutMs = 20_000,
+): Promise<PipelineRun | null> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const run = h.orchestrator.runs().find((r) => r.ghsa_id === ghsaId);
+    if (run) return run;
+    await sleep(25);
+  }
+  return null;
+}
+
 async function beat(
   h: Hopper,
   store: Store,
@@ -32,13 +54,22 @@ async function beat(
   label: string,
   advisory: Advisory,
 ): Promise<BeatResult> {
+  const before = h.orchestrator.runs().length;
+
   await h.bus.publish('advisories', {
     kind: 'advisory',
     advisory,
     received_at: nowIso(),
   });
 
-  const run = await h.orchestrator.handle(advisory);
+  let run = await awaitRun(h, advisory.ghsa_id);
+
+  // If nothing is subscribed (a bare runtime, or a bus with no router
+  // attached) drive it directly rather than reporting a false suppression.
+  if (!run && h.orchestrator.runs().length === before) {
+    run = await h.orchestrator.handle(advisory);
+  }
+
   if (run) {
     store.applyRun(run);
     await store.propagate(run, HOP_INTERVAL_MS);
@@ -50,41 +81,62 @@ async function beat(
     run,
     note: run
       ? `${run.outcome} · ${run.traces.length} nodes · ${run.latency_ms}ms · pipeline ${run.pipeline_id}`
-      : 'deduped',
+      : 'no run produced',
   };
 }
 
 /**
- * Between beat 1 and beat 3: the PR opened during beat 1 comes back red.
+ * The PR opened during beat 1 comes back red.
+ *
  * This is not stagecraft — it is the system recording the consequence of its
- * own action, and it is what makes beat 3's conflict real rather than scripted.
+ * own action, and it is what makes beat 3's conflict real rather than
+ * scripted. It fires straight after beat 1 so the precedent's age is genuinely
+ * however long the presenter took to reach beat 3, not a number we assert.
  */
-async function ciResult(h: Hopper): Promise<void> {
+async function ciResult(h: Hopper, ts = nowIso()): Promise<void> {
+  const attemptId = id('patch');
   await h.graph.recordPatchAttempt({
-    id: id('patch'),
+    id: attemptId,
     package: PRECEDENT_PACKAGE,
     from_v: '9.0.3',
     to_v: '9.0.5',
     outcome: 'broke_staging',
-    ts: nowIso(),
+    ts,
+    // carry the node id in the note: Precedent (Q3) has no id field, and the
+    // Patch Engineer cites whatever id it can find here.
     notes:
-      'staging integration suite failed after the transitive bump opened for ' +
-      `${HERO_PACKAGE}: 14 glob-pattern tests regressed`,
+      `${attemptId}: staging integration suite failed after the transitive bump ` +
+      `opened for ${HERO_PACKAGE} — 14 glob-pattern tests regressed`,
   });
   await h.graph.recordObservation(
     HERO_ADVISORY.ghsa_id,
     `CI: staging broke on the ${PRECEDENT_PACKAGE} bump carried by the ${HERO_PACKAGE} fix`,
+    ts,
   );
+}
+
+/** has beat 1's red build already been recorded? */
+async function hasFreshFailure(h: Hopper): Promise<boolean> {
+  const precedents = await h.graph.precedent(PRECEDENT_PACKAGE).catch(() => []);
+  return precedents.some((p) => p.outcome === 'broke_staging' && p.age_seconds <= 600);
 }
 
 export async function runBeat(h: Hopper, store: Store, step: number): Promise<BeatResult> {
   switch (step) {
-    case 1:
-      return beat(h, store, 1, 'the hit', HERO_ADVISORY);
+    case 1: {
+      const result = await beat(h, store, 1, 'the hit', HERO_ADVISORY);
+      // CI comes back on the PR we just opened
+      if (result.run?.outcome === 'escalated') await ciResult(h);
+      return result;
+    }
     case 2:
       return beat(h, store, 2, 'the restraint', SUPPRESSED_ADVISORY);
     case 3:
-      await ciResult(h);
+      // driving beat 3 on its own, without beat 1 having run: stamp the failed
+      // build at the point in the arc where it would have happened.
+      if (!(await hasFreshFailure(h))) {
+        await ciResult(h, new Date(Date.now() - 90_000).toISOString());
+      }
       return beat(h, store, 3, 'memory', PRECEDENT_ADVISORY);
     default:
       throw new Error(`unknown beat: ${step}`);

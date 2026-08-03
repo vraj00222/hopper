@@ -12,8 +12,30 @@ const TITLES: Record<ActionKind, string> = {
   open_ticket: 'Ticket',
 };
 
-function receiptTitle(r: ActionReceipt): string {
-  return r.detail || TITLES[r.action];
+/** drawn, not a dingbat — there is no emoji anywhere in this product */
+function DoneMark() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 11 11" aria-hidden="true">
+      <path
+        d="M1.4 5.9 L4.2 8.6 L9.6 2.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function HeldMark() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true">
+      <circle cx="6" cy="6" r="4.7" fill="none" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M6 6 V3.1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M6 6 L8.2 7.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+    </svg>
+  );
 }
 
 export function ActionsPanel({
@@ -42,30 +64,16 @@ export function ActionsPanel({
           <div className="empty">no actions taken</div>
         )}
 
-        {receipts.map((r) => {
-          const wasGated = settled.some((a) => a.action === r.action);
-          return (
-            <div className="action-row" key={`${r.action}-${r.ref}`}>
-              <span className="action-mark">&#10003;</span>
-              <span>
-                <span className="action-title">{receiptTitle(r)}</span>
-                <br />
-                <span className="action-ref">
-                  {r.ref} · {r.latency_ms}ms{r.mock ? ' · mock' : ''}
-                </span>
-              </span>
-              <span className="action-tag">{wasGated ? 'approved' : 'auto'}</span>
-            </div>
-          );
-        })}
-
+        {/* the gated row goes first: it is the only thing on this screen that
+            is waiting on a person, and it must never scroll out of reach */}
         {pending.map((a) => (
           <div key={a.id}>
-            <div className="action-row">
-              <span className="action-mark is-pending">&#8987;</span>
-              <span>
+            <div className="action-row is-gated">
+              <span className="action-mark is-pending">
+                <HeldMark />
+              </span>
+              <span className="action-body">
                 <span className="action-title">{a.title}</span>
-                <br />
                 <span className="action-ref">{a.body}</span>
               </span>
               <button type="button" className="approve-btn" onClick={() => onApprove(a.id)}>
@@ -74,10 +82,30 @@ export function ActionsPanel({
             </div>
             <div className="gate-note">
               <span className="arrow">&uarr;</span>
-              <span>Guild HITL gate · no token issued until a human signs</span>
+              <span>Guild HITL gate · no token until a human signs</span>
             </div>
           </div>
         ))}
+
+        {receipts.map((r) => {
+          const gated = settled.some((a) => a.action === r.action);
+          return (
+            <div className="action-row" key={`${r.action}-${r.ref}`}>
+              <span className="action-mark">
+                <DoneMark />
+              </span>
+              <span className="action-body">
+                <span className="action-title">{r.detail || TITLES[r.action]}</span>
+                <span className="action-ref">
+                  {r.ref} · {r.latency_ms}ms{r.mock ? ' · mock' : ''}
+                </span>
+              </span>
+              <span className={`action-tag${gated ? ' is-signed' : ''}`}>
+                {gated ? 'approved' : 'auto'}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

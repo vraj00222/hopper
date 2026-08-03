@@ -70,24 +70,122 @@ export interface PullReport {
   notes: string[];
 }
 
-const BURST_PACKAGES = [
-  'lodash',
-  'semver',
-  'tar',
-  'ws',
-  'postcss',
-  'follow-redirects',
-  'json5',
-  'ip',
-  'braces',
-  'micromatch',
-  'debug',
-  'qs',
-  'node-fetch',
-  'undici',
-  'cookie',
+/**
+ * The burst pool — and why it is what it is.
+ *
+ * The funnel demo says "50 advisories in 10 seconds, 2 survive". That number
+ * has to be earned by the graph, not rigged by the generator, so the pool has
+ * to reflect the real shape of the problem: an estate of six repos is untouched
+ * by the overwhelming majority of CVEs published against npm. Suppression is
+ * the product; a burst that mostly escalates is a burst that lies.
+ *
+ * Every name below is a real, well-known npm package that is genuinely ABSENT
+ * from the seeded dependency closure (the 450 packages reachable from express,
+ * next, webpack, jest, eslint and axios in fixtures/depsdev.json). They are
+ * drawn from unrelated corners of the JS world — Angular, Vue, Svelte,
+ * Electron, the ORMs, the CMSs, the game and dataviz stacks — precisely because
+ * this estate does not use them. Verified by cross-checking the closure, and
+ * the gate re-checks it so the property survives a later edit.
+ *
+ * `@angular/compiler` is deliberately excluded: it is the beat-2 suppression
+ * case and owns its own advisory.
+ */
+export const BURST_ABSENT_PACKAGES = [
+  '@angular/core',
+  '@angular/router',
+  '@angular/forms',
+  '@angular/platform-browser',
+  'vue',
+  'vue-router',
+  'pinia',
+  'nuxt',
+  'svelte',
+  '@sveltejs/kit',
+  'electron',
+  'electron-builder',
+  'gatsby',
+  '@strapi/strapi',
+  '@nestjs/core',
+  '@nestjs/common',
+  'prisma',
+  '@prisma/client',
+  'sequelize',
+  'typeorm',
+  'mongoose',
+  'knex',
+  'puppeteer',
+  'playwright',
+  'cypress',
+  '@storybook/react',
+  '@ionic/angular',
+  'parse-server',
+  'sails',
+  '@feathersjs/feathers',
+  '@loopback/core',
+  '@adonisjs/core',
+  '@redwoodjs/router',
+  'ember-source',
+  'backbone',
+  'preact',
+  'lit',
+  'solid-js',
+  'koa',
+  'fastify',
+  'socket.io',
+  'ioredis',
+  'bullmq',
+  'nodemailer',
+  'passport',
+  'stripe',
+  'firebase-admin',
+  'three',
+  'd3',
+  'chart.js',
+  'leaflet',
+  'phaser',
+  'moment',
+  'luxon',
+  'ramda',
+  'rxjs',
+  'mobx',
+  'redux',
+  '@apollo/client',
+  'tailwindcss',
+  'bootstrap',
+  'handlebars',
+  'contentful',
+  'directus',
 ] as const;
+
+/**
+ * The handful that genuinely land. Both are inside the seeded closure AND have
+ * telemetry hits in src/telemetry.ts, so they survive the hop walk and the
+ * reachability check honestly rather than by construction.
+ */
+export const BURST_SURVIVOR_PACKAGES = ['glob', 'express'] as const;
+
+/** "50 advisories in 10 seconds, 2 survive" — the number the demo says out loud */
+export const BURST_SURVIVORS = 2;
+
 const BURST_SEVERITIES: Severity[] = ['LOW', 'MODERATE', 'MODERATE', 'HIGH', 'HIGH', 'CRITICAL'];
+
+/**
+ * Which package each advisory in a burst of `n` is about. Survivors are spread
+ * through the run rather than bunched at the front, so the funnel narrows on
+ * screen instead of resolving in the first second.
+ */
+export function burstPlan(n: number, survivors: number = BURST_SURVIVORS): string[] {
+  const wanted = Math.max(0, Math.min(survivors, n, BURST_SURVIVOR_PACKAGES.length));
+  const plan: string[] = [];
+  for (let i = 0; i < n; i += 1) {
+    plan.push(BURST_ABSENT_PACKAGES[i % BURST_ABSENT_PACKAGES.length]);
+  }
+  for (let k = 0; k < wanted; k += 1) {
+    const at = Math.min(n - 1, Math.round(((k + 1) * n) / (wanted + 1)));
+    plan[at] = BURST_SURVIVOR_PACKAGES[k];
+  }
+  return plan;
+}
 const ID_ALPHABET = '23456789cfghjmpqrvwx';
 
 let burstCounter = 0;
@@ -239,11 +337,16 @@ export class HopperIngest implements IngestPort {
     return this.lastPull;
   }
 
-  async burst(n: number, overSeconds: number): Promise<number> {
+  /**
+   * `opts.survivors` overrides how many of the n advisories are about packages
+   * this estate actually depends on. Defaults to BURST_SURVIVORS (2).
+   */
+  async burst(n: number, overSeconds: number, opts?: { survivors?: number }): Promise<number> {
+    const plan = burstPlan(n, opts?.survivors ?? BURST_SURVIVORS);
     const gap = n > 1 ? Math.max(0, (overSeconds * 1000) / n) : 0;
     let published = 0;
     for (let i = 0; i < n; i += 1) {
-      await this.publishAdvisory(syntheticAdvisory(i));
+      await this.publishAdvisory(syntheticAdvisory(i, plan[i]));
       published += 1;
       if (i < n - 1 && gap > 0) await sleep(gap);
     }
@@ -358,8 +461,8 @@ export function syntheticGhsaId(): string {
   return `GHSA-${block(1)}-${block(2)}-${block(3)}`;
 }
 
-export function syntheticAdvisory(i: number): Advisory {
-  const pkg = BURST_PACKAGES[i % BURST_PACKAGES.length];
+export function syntheticAdvisory(i: number, packageName?: string): Advisory {
+  const pkg = packageName ?? BURST_ABSENT_PACKAGES[i % BURST_ABSENT_PACKAGES.length];
   const severity = BURST_SEVERITIES[i % BURST_SEVERITIES.length];
   const major = 1 + (i % 7);
   const minor = i % 13;

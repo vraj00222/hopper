@@ -5,6 +5,7 @@
 import {
   API_PORT,
   type Advisory,
+  type AdvisoryClass,
   type AdvisoryEvent,
   type AgentBusEvent,
   type AppState,
@@ -17,6 +18,25 @@ import {
   HERO_GHSA,
 } from '@hopper/contracts';
 import type { Hopper } from './wire.js';
+
+const UNKNOWN_CLASS: AdvisoryClass = {
+  id: 'unknown',
+  ecosystem: 'npm',
+  severity_band: 'low',
+  depth_band: 'none',
+};
+
+/** the run carries its class as the `${eco}/${sev}/${depth}` id string */
+function parseClassId(classId: string): AdvisoryClass {
+  const [ecosystem, severity_band, depth_band] = classId.split('/');
+  if (!ecosystem || !severity_band || !depth_band) return UNKNOWN_CLASS;
+  return {
+    id: classId,
+    ecosystem: ecosystem as AdvisoryClass['ecosystem'],
+    severity_band: severity_band as AdvisoryClass['severity_band'],
+    depth_band: depth_band as AdvisoryClass['depth_band'],
+  };
+}
 
 export class Store {
   private feed = new Map<string, FeedItem>();
@@ -119,6 +139,51 @@ export class Store {
     this.emit({ type: 'run', run });
     this.emit({ type: 'funnel', funnel: this.hopper.orchestrator.funnel() });
     this.focusId = run.ghsa_id;
+    void this.startObligationClocks(run);
+  }
+
+  /**
+   * An obligation with no clock is just a note. The moment a traversal lands on
+   * a breach-notification clause, the countdown starts — and it starts from
+   * when the advisory was PUBLISHED, not from when we got round to looking,
+   * because that is how the clause reads.
+   */
+  private async startObligationClocks(run: PipelineRun): Promise<void> {
+    if (run.outcome !== 'escalated') return;
+
+    const clauses = run.agent_result?.obligation.obligated
+      ? run.agent_result.obligation.clauses.map((c) => ({
+          customer: c.customer,
+          window_hours: c.hours,
+          clause_ref: c.clause_ref,
+        }))
+      : run.hop_paths.map((p) => ({
+          customer: p.customer,
+          window_hours: p.notice_window,
+          clause_ref: p.clause_ref,
+        }));
+
+    // the clause reads "within N hours of publication", and the agents compute
+    // deadline = published_at + hours, so the clock must agree with them.
+    const publishedAt = this.feed.get(run.ghsa_id)?.published_at;
+
+    const seen = new Set<string>();
+    for (const c of clauses) {
+      const key = `${run.ghsa_id}:${c.customer}`;
+      if (seen.has(key) || this.clocks.has(key)) continue;
+      seen.add(key);
+      await this.hopper.ingest
+        .startClock({
+          ghsa_id: run.ghsa_id,
+          customer: c.customer,
+          window_hours: c.window_hours,
+          clause_ref: c.clause_ref,
+          started_at: publishedAt,
+        })
+        .catch(() => {
+          /* a clock that will not start must not take the arc down */
+        });
+    }
   }
 
   /** the signature animation: one ring per 300ms, driven server-side so the
@@ -151,7 +216,7 @@ export class Store {
         { id: ghsaId },
       )
       .catch(() => []);
-    const advisory = (rows[0]?.a ?? null) as Advisory | null;
+    const advisory = (rows[0]?.a ?? null) as unknown as Advisory | null;
     if (!advisory && !run) return null;
 
     const [hop_paths, absence, precedents, oncall, audit] = await Promise.all([
@@ -167,14 +232,17 @@ export class Store {
     const ar = run?.agent_result;
     const focus: FocusView = {
       advisory: advisory as never,
-      advisory_class: (run
-        ? meta.classify({
-            advisory: advisory as never,
-            maxHops: hop_paths.length ? Math.max(...hop_paths.map((p) => p.hops)) : 0,
-            pathCount: hop_paths.length,
-            isChokepoint: false,
-          })
-        : { id: 'unknown', ecosystem: 'npm', severity_band: 'low', depth_band: 'none' }) as never,
+      advisory_class:
+        run?.advisory_class && typeof run.advisory_class === 'string'
+          ? parseClassId(run.advisory_class)
+          : advisory?.severity
+            ? meta.classify({
+                advisory,
+                maxHops: hop_paths.length ? Math.max(...hop_paths.map((p) => p.hops)) : 0,
+                pathCount: hop_paths.length,
+                isChokepoint: false,
+              })
+            : UNKNOWN_CLASS,
       hop_paths,
       absence,
       precedents,

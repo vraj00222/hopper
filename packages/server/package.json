@@ -4,16 +4,23 @@
   "private": true,
   "type": "module",
   "main": "./src/main.ts",
-  "scripts": { "dev": "tsx watch src/main.ts" },
+  "scripts": {
+    "dev": "tsx watch src/main.ts"
+  },
   "dependencies": {
+    "@hopper/agents": "*",
     "@hopper/contracts": "*",
     "@hopper/graph": "*",
     "@hopper/ingest": "*",
-    "@hopper/orchestrate": "*",
-    "@hopper/agents": "*",
     "@hopper/meta": "*",
+    "@hopper/orchestrate": "*",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.25",
+    "@types/ws": "^8.18.1"
   }
 }
